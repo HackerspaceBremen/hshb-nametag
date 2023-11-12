@@ -1,7 +1,6 @@
 #define MEDIUM_PRESS_TIME 1000
 #define LONG_PRESS_TIME 2000
 
-#define F_CPU 8000000UL
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>

@@ -1,5 +1,6 @@
 #include <avr/pgmspace.h>
 
+#include "display.h"
 #include "logo.h"
 
 extern uint8_t vRAM[522];
@@ -29,18 +30,20 @@ void resetAnimations(uint8_t clearScreen) {
   counter1 = 0;
   counter2 = 0;
   if (clearScreen) {
-    for (uint16_t k = 420; k < 522; k++) vRAM[k] = 0;
+    for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = 0;
   }
 }
 
-uint8_t linesAnimation(uint8_t fill, uint8_t on, uint8_t off) {
+uint8_t linesAnimation(uint8_t fill) {
+  uint8_t on = display_settings.animationOnBrightness;
+  uint8_t off = display_settings.animationOffBrightness;
   if (counter0 < 1) {
     counter0++;
   } else {
     counter0 = 0;
     if (step == 0) {
       if (!fill) {
-        for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+        for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
       }
       logoDrawLine(i, 0, i, 18, on);
       i++;
@@ -52,7 +55,7 @@ uint8_t linesAnimation(uint8_t fill, uint8_t on, uint8_t off) {
       if (fill) {
         logoDrawLine(0, i, 14, i, off);
       } else {
-        for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+        for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
         logoDrawLine(0, i, 14, i, on);
       }
       i++;
@@ -62,7 +65,7 @@ uint8_t linesAnimation(uint8_t fill, uint8_t on, uint8_t off) {
       }
     } else if (step == 2) {
       if (!fill) {
-        for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+        for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
       }
       logoDrawLine(14 - i, 0, 14 - i, 18, on);
       i++;
@@ -74,7 +77,7 @@ uint8_t linesAnimation(uint8_t fill, uint8_t on, uint8_t off) {
       if (fill) {
         logoDrawLine(0, 18 - i, 14, 18 - i, off);
       } else {
-        for (int k = 420; k < 522; k++) vRAM[k] = off;
+        for (int k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
         logoDrawLine(0, 18 - i, 14, 18 - i, on);
       }
       i++;
@@ -88,7 +91,9 @@ uint8_t linesAnimation(uint8_t fill, uint8_t on, uint8_t off) {
   return 1;
 }
 
-uint8_t rotateAnimation(uint8_t fill, uint8_t on, uint8_t off) {
+uint8_t rotateAnimation(uint8_t fill) {
+  uint8_t on = display_settings.animationOnBrightness;
+  uint8_t off = display_settings.animationOffBrightness;
   if (quarter % 2 == 0) {
     if (fill) {
       if (quarter == 0) {
@@ -97,7 +102,7 @@ uint8_t rotateAnimation(uint8_t fill, uint8_t on, uint8_t off) {
         logoDrawLine(i, 0, 14 - i, 18, off);
       }
     } else {
-      for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+      for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
       logoDrawLine(i, 0, 14 - i, 18, on);
     }
     i++;
@@ -113,7 +118,7 @@ uint8_t rotateAnimation(uint8_t fill, uint8_t on, uint8_t off) {
         logoDrawLine(0, 18 - i, 14, i, off);
       }
     } else {
-      for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+      for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
       logoDrawLine(0, 18 - i, 14, i, on);
     }
     i++;
@@ -129,12 +134,14 @@ uint8_t rotateAnimation(uint8_t fill, uint8_t on, uint8_t off) {
   return 1;
 }
 
-uint8_t circlesAnimation(uint8_t on, uint8_t off) {
+uint8_t circlesAnimation() {
+  uint8_t on = display_settings.animationOnBrightness;
+  uint8_t off = display_settings.animationOffBrightness;
   if (counter0 < 2) {
     counter0++;
   } else {
     counter0 = 0;
-    for (uint16_t k = 420; k < 522; k++) vRAM[k] = off;
+    for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = off;
     logoDrawCircle(pgm_read_byte(&circleXPos[i]), pgm_read_byte(&circleYPos[i]),
                    j, on);
 
@@ -208,7 +215,9 @@ void matrixAnimation() {
   counter2++;
 }
 
-void sweepAnimation(uint8_t on, uint8_t off) {
+void sweepAnimation() {
+  uint8_t on = display_settings.animationOnBrightness;
+  uint8_t off = display_settings.animationOffBrightness;
   j--;
   if (j == -127) {
     j = 18;

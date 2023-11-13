@@ -3,17 +3,17 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 
-uint8_t tx_len = 0;
+volatile uint8_t tx_len = 0;
 volatile uint8_t tx_pos = 0;
 volatile uint8_t rx_len = 0;
-char tx_buf[150];
-volatile char rx_buf[100];
+volatile char tx_buf[TX_BUFFER_SIZE];
+volatile char rx_buf[RX_BUFFER_SIZE];
 
 volatile uint8_t uart_rx = 0;
 volatile uint8_t uart_tx = 0;
 
 void handleUART() {
-  if (!uart_rx && (UCSRA & (1 << RXC))) {  // UART Available
+  if (!uart_rx && (UCSRA & (1 << RXC))) {  // UART RX character Available
     rx_buf[rx_len] = UDR;
     if (rx_buf[rx_len] == '\n') {
       if (rx_buf[rx_len - 1] == '\r') rx_len--;

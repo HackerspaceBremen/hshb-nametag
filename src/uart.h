@@ -4,11 +4,12 @@
 #include <stdint.h>
 
 #define TX_BUFFER_SIZE 150
-extern char tx_buf[150];
-extern uint8_t tx_len;
-extern volatile uint8_t tx_pos;
 #define RX_BUFFER_SIZE 100
-extern volatile char rx_buf[100];
+
+extern volatile char tx_buf[TX_BUFFER_SIZE];
+extern volatile uint8_t tx_len;
+extern volatile uint8_t tx_pos;
+extern volatile char rx_buf[RX_BUFFER_SIZE];
 extern volatile uint8_t rx_len;
 
 extern volatile uint8_t uart_rx;

@@ -9,13 +9,14 @@ CSTANDARD = gnu99
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 OBJECTS := $(patsubst %.c,%.o,$(subst $(SRCDIR),$(BUILDDIR),$(SOURCES)))
 BOARD := 1
+SERIAL_PORT ?= /dev/ttyUSB0
+BAUD := 300
 
 AVRDUDE ?= avrdude
 AVRDUDE_PROGRAMMER ?= arduino
 AVRDUDE_VERBOSITY ?= -vv
 AVRDUDE_BAUD ?= 38400
-AVRDUDE_PORT ?= /dev/ttyUSB0
-AVRDUDE_FLAGS ?= -p $(MCU) -c $(AVRDUDE_PROGRAMMER) -b $(AVRDUDE_BAUD) -P $(AVRDUDE_PORT) $(AVRDUDE_VERBOSITY)
+AVRDUDE_FLAGS ?= -p $(MCU) -c $(AVRDUDE_PROGRAMMER) -b $(AVRDUDE_BAUD) -P $(SERIAL_PORT) $(AVRDUDE_VERBOSITY)
 AVRDUDE_WRITE_FLASH ?= -U flash:w:$(BUILDDIR)/$(TARGET).hex
 AVRDUDE_WRITE_EEPROM ?= -U eeprom:w:$(BUILDDIR)/$(TARGET).eep
 
@@ -24,6 +25,7 @@ OBJCOPY = avr-objcopy
 SIZE = avr-size
 NM = avr-nm
 REMOVE = rm -fv
+SCREEN = screen
 
 CDEFS = -DF_CPU=$(F_CPU)UL -DBoard$(BOARD)
 CFLAGS = $(CDEFS)
@@ -74,4 +76,4 @@ program_all: $(BUILDDIR)/$(TARGET).hex $(BUILDDIR)/$(TARGET)_eeprom.hex
 clean:
 	$(REMOVE) $(BUILDDIR)/*
 
-.PHONY: program_all program_flash program_eeprom size size_detailed clean
+.PHONY: program_all program_flash program_eeprom size size_detailed console clean

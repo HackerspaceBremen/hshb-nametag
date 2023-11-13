@@ -19,6 +19,13 @@ volatile uint8_t line = 0;
 volatile uint8_t scaleCounter = 0;
 volatile uint8_t scrolling = 0;
 
+struct DisplaySettings display_settings = {
+    .animationOnBrightness = 32,
+    .animationOffBrightness = 0,
+    .textOnBrightness = 64,
+    .textOffBrightness = 0,
+};
+
 // clang-format off
 const uint8_t charset[][5] PROGMEM = {
     {	 // Space
@@ -726,9 +733,9 @@ void writeText(uint16_t x, char t[], uint8_t s, uint8_t c, uint8_t onBright,
     for (uint16_t j = x + c * s * 7; x < j && x < 420; x++) {
       vRAM[x] = offBright;
     }
-    if (x >= 420) return;
+    if (x >= TEXT_END) return;
   }
-  for (; x < 420; x++) {
+  for (; x < TEXT_END; x++) {
     vRAM[x] = offBright;
   }
 }
@@ -786,4 +793,8 @@ uint8_t scrollDisplay() {
     }
   }
   return 1;
+}
+
+void clearVRAM() {
+  for (uint16_t k = TEXT_START; k < LOGO_END; k++) vRAM[k] = 0;
 }

@@ -49,7 +49,7 @@ struct Slot currentSlot = {
     .slot_no = SLOT_MAX,
     .slot_loaded_millis = 0,
     .scroll_counter = 0,
-    .last_animation = 0,
+    .last_animation = UINT8_MAX,
 };
 
 // Set to 1 to advance slot after finishing current drawing
@@ -79,6 +79,10 @@ void advance_slot() {
       // No active slots found.
       break;
     }
+  }
+  if (currentSlot.last_animation == UINT8_MAX) {
+    // Initialize last_animation to prevent flickering
+    currentSlot.last_animation = currentSlot.animation;
   }
 }
 
@@ -181,6 +185,7 @@ void battery_check() {
     }
   }
 }
+
 void handle_state() {
   if (!(PIND & (1 << 3))) {
     if (!charging) {
@@ -209,6 +214,7 @@ void handle_state() {
     }
   }
 }
+
 int main(void) {
   // Initialize all pixels to zero
   for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
@@ -281,7 +287,7 @@ int main(void) {
           currentSlot.slot_loaded_millis = millis;
           if (!currentSlot.enabled) {
             // No enabled slot was found
-            for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
+            clearVRAM();
             writeText(7, "No Data", 1, 2, 5, 0);
           } else {
             if (currentSlot.animation != currentSlot.last_animation) {

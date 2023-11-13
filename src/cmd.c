@@ -22,14 +22,10 @@ uint8_t read_number(uint8_t *msg_pos, uint8_t *err) {
 
     if (*msg_pos >= rx_len) {
       *err = 1;
-      return 0;
+      return ret;
     }
   }
   (*msg_pos)++;
-  if (*msg_pos >= rx_len) {
-    *err = 1;
-    return 0;
-  }
   return ret;
 }
 
@@ -39,6 +35,7 @@ void cmd_write_slot() {
   uint8_t msg_pos = 2;
   uint8_t err = 0;
   if (msg_pos >= rx_len || rx_buf[1] != ' ') err = 1;
+  saveSlot.slot_no = read_number(&msg_pos, &err);
   saveSlot.animation = read_number(&msg_pos, &err);
   saveSlot.seconds_scrolls = read_number(&msg_pos, &err);
   saveSlot.text_type = read_number(&msg_pos, &err);
@@ -52,10 +49,10 @@ void cmd_write_slot() {
     return;
   }
 
-  for (uint8_t i = msg_pos; i < rx_len; i++) {
+  for (uint8_t i = msg_pos; i < rx_len && i < SLOT_TEXT_BUFFER_SIZE; i++) {
     saveSlot.text[i - msg_pos] = rx_buf[i];
   }
-  saveSlot.text[rx_len] = 0;
+  saveSlot.text[rx_len - msg_pos] = 0;
   save_slot(&saveSlot);
   print_slot(&saveSlot);
   uart_tx = 1;

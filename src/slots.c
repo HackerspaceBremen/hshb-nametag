@@ -28,7 +28,24 @@ void load_slot(struct Slot *slot) {
 
   slot->slot_loaded_millis = 0;
   slot->scroll_counter = 0;
-  slot->last_animation = 0;
+}
+
+void sanitize_chars(char *chars) {
+  // Iterate over text to process special chars
+  uint8_t write_ptr = 0, read_ptr = 0;
+  while ((read_ptr < SLOT_TEXT_BUFFER_SIZE) &&
+         (write_ptr < SLOT_TEXT_BUFFER_SIZE)) {
+    if (chars[read_ptr] == '\0') {
+      return;
+    }
+
+    if (chars[read_ptr] == 195) {
+      chars[write_ptr++] = chars[++read_ptr];
+      read_ptr++;
+    } else {
+      chars[write_ptr++] = chars[read_ptr++];
+    }
+  }
 }
 
 void save_slot(struct Slot *slot) {
@@ -40,8 +57,10 @@ void save_slot(struct Slot *slot) {
   eeprom_write_byte(base_address + 4, slot->offset_scroll_speed);
   eeprom_write_byte(base_address + 5, slot->scaler);
   eeprom_write_byte(base_address + 6, slot->char_space);
+
   if (slot->text_type != NO_TEXT) {
-    // No need to write text if it is not shown anyway
+    // No need to write text data if it is not shown anyway
+    sanitize_chars(slot->text);
     eeprom_write_block(slot->text, base_address + 7, SLOT_TEXT_BUFFER_SIZE);
   }
 
@@ -62,33 +81,11 @@ void print_slot(struct Slot *slot) {
     tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE,
                       "Slot %d is not active.\r\n", slot->slot_no);
   } else {
-    if (slot->text_type != NO_TEXT) {
-      tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE,
-                        "Slot %d:\r\n%d %d %d %d %d %d %d\r\n", slot->slot_no,
-                        slot->enabled, slot->animation, slot->seconds_scrolls,
-                        slot->text_type, slot->offset_scroll_speed,
-                        slot->scaler, slot->char_space);
-      for (uint8_t i = 0; i < SLOT_TEXT_BUFFER_SIZE; i++) {
-        tx_buf[++tx_len] = slot->text[i];
-        if (slot->text[i] == 0) {
-          break;
-        }
-
-        if (tx_len == (TX_BUFFER_SIZE - 5)) {
-          // Cut text short
-          tx_buf[++tx_len] = '.';
-          tx_buf[++tx_len] = '.';
-          tx_buf[++tx_len] = '.';
-          break;
-        }
-      }
-      tx_buf[++tx_len] = '\r';
-      tx_buf[++tx_len] = '\n';
-    } else {
-      tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE,
-                        "Slot %d:\r\n%d %d\r\nNo Text...\r\n", slot->slot_no,
-                        slot->animation, slot->seconds_scrolls);
-    }
+    tx_len = snprintf(
+        (char *)tx_buf, TX_BUFFER_SIZE,
+        "Slot %d:\r\n%d %d %d %d %d %d %d\r\n%s\r\n", slot->slot_no,
+        slot->enabled, slot->animation, slot->seconds_scrolls, slot->text_type,
+        slot->offset_scroll_speed, slot->scaler, slot->char_space, slot->text);
   }
 }
 

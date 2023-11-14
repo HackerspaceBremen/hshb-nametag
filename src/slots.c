@@ -63,17 +63,6 @@ void save_slot(struct Slot *slot) {
     sanitize_chars(slot->text);
     eeprom_write_block(slot->text, base_address + 7, SLOT_TEXT_BUFFER_SIZE);
   }
-
-  // for (uint8_t i = 0; i < 90; i++) {
-  //                textBuffer[i] = eeprom_read_byte(
-  //                    (const uint8_t *)(slot * 100 + 7 + i + skipByte));
-  //                if (textBuffer[i] == 195) {
-  //                  skipByte++;
-  //                  textBuffer[i] = eeprom_read_byte(
-  //                      (const uint8_t *)(slot * 100 + 7 + i + skipByte));
-  //                }
-  //                if (textBuffer[i] == 0) break;
-  //              }
 }
 
 void print_slot(struct Slot *slot) {

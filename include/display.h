@@ -30,4 +30,4 @@ void scrollStop();
 
 void clearVRAM();
 
-#endif  // DISPLAY_H_
+#endif

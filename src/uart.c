@@ -38,10 +38,14 @@ void handleUART() {
 uint8_t uartWriteLn(const char *flashStr) {
   if (!uart_tx) {
     uint8_t len = 0;
-    while (len < TX_BUFFER_SIZE - 1 &&
-           (tx_buf[len] = pgm_read_byte(flashStr + len)) != '\0')
+    // Reserve 2 to add \r\n
+    while (len < TX_BUFFER_SIZE - 2) {
+      tx_buf[len] = pgm_read_byte(flashStr + len);
+      if (tx_buf[len] == '\0') {
+        break;
+      }
       len++;
-    len++;
+    }
     tx_buf[len] = '\r';
     tx_buf[len + 1] = '\n';
     tx_len = len + 2;

@@ -25,4 +25,4 @@ void matrixAnimation();
 void sweepAnimation();
 void waveAnimation();
 
-#endif  // ANIMATIONS_H_
+#endif

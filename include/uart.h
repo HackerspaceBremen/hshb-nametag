@@ -19,4 +19,4 @@ void handleUART();
 
 uint8_t uartWriteLn(const char *flashStr);
 
-#endif  // UART_H_
+#endif

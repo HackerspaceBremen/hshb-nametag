@@ -59,9 +59,12 @@ void cmd_write_slot() {
 }
 
 void cmd_read_slot() {
-  if (rx_len == 3 && rx_buf[1] == ' ' && rx_buf[2] >= '0' && rx_buf[2] <= '9') {
-    struct Slot readSlot;
-    readSlot.slot_no = (rx_buf[2] - '0');
+  uint8_t msg_pos = 2;
+  uint8_t err = 0;
+  struct Slot readSlot;
+  readSlot.slot_no = read_number(&msg_pos, &err);
+
+  if (!err) {
     load_slot(&readSlot);
     print_slot(&readSlot);
     uart_tx = 1;
@@ -143,8 +146,6 @@ void cmd_list_slots() {
 void cmd_set_brightness() {
   uint8_t msg_pos = 2, err = 0;
   uint8_t values[4] = {0, 0, 0, 0};
-  // [0] Animation On Brightness, [1] Animation Off Brightness,
-  // [2] Text On Brightness, [3] Text Off Brightness
 
   for (uint8_t i = 0; i < 4; i++) {
     values[i] = read_number(&msg_pos, &err);
@@ -160,11 +161,7 @@ void cmd_set_brightness() {
   }
 }
 
-void cmd_invalid_command() {  // uartWriteLn(F("Invalid command. Available
-                              // commands:\r\nW: Write
-  // Slot\r\nR: Read Slot\r\nE: Enable Slot\r\nD: Disable Slot\r\nF:
-  // Format\r\nL: List\r\nB: Brightness"));
-
+void cmd_invalid_command() {
   uartWriteLn(
       F("Invalid command.\r\nW: Write\r\nR: Read\r\nE: Enable\r\nD: "
         "Disable\r\nL: List\r\nF: Format\r\nB: Brightness"));

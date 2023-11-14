@@ -7,6 +7,7 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
       - id: check-json
+        exclude: \.vscode/.*
       - id: check-xml
       - id: destroyed-symlinks
       - id: end-of-file-fixer

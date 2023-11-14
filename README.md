@@ -2,34 +2,30 @@
 
 This repositoy contains the source code for the HSHB Nametag, a PCB designed in the [Hackerspace Bremen e.V.](https://www.hackerspace-bremen.de).
 
+## Prerequisites
+
+Building and flashing is done with [PlatformIO](https://platformio.org/).
+
 ## Building
 
-Building and flashing is done via a Makefile. Install avr-gcc and avr-binutils for your operating system or use Microchip Studio.
+Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. If you're using the `pio` binary simply run
 
 ```shell
-$ make -j all BOARD=1
+$ pio run
 ```
-
-Replace `BOARD` with your board no (sticker on the back side of the board, required for calibration data).
 
 ## Flashing
 
-Flashing is also done via the Makefile. Install [avrdude](https://github.com/avrdudes/avrdude/) for your operating system.
+Flash the project by using the appropriate button in your PlatformIO IDE. If you're using the `pio` binary run
 
 ```shell
-$ make program_flash
-```
-
-You can provide `SERIAL_PORT` if you require a port different from `/dev/ttyUSB0` like this:
-
-```shell
-$ make program_flash SERIAL_PORT=COM1
+$ pio run -t upload
 ```
 
 ## Serial console
 
-The Makefile also provides a convenience target for opening a serial console:
+A serial console can be opened by running
 
 ```shell
-$ make console
+$ pio device monitor
 ```

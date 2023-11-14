@@ -14,18 +14,26 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build on Linux
         run: |
-          sudo apt-get install gcc-avr binutils-avr avr-libc -y
-          make -j
+          sudo apt-get install curl python3 python3-venv -y
+          curl -fsSL -o get-platformio.py https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
+          python3 get-platformio.py
+          mkdir -p $HOME/.local/bin
+          export PATH=$PATH:$HOME/.local/bin
+          ln -s ~/.platformio/penv/bin/platformio ~/.local/bin/platformio
+          ln -s ~/.platformio/penv/bin/pio ~/.local/bin/pio
+          ln -s ~/.platformio/penv/bin/piodebuggdb ~/.local/bin/piodebuggdb
+          pio run
+          cp .pio/build/ATmega32/firmware.hex hshb-nametag.hex
         shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: hshb-nametag.hex
-          path: build/hshb-nametag.hex
+          path: hshb-nametag.hex
       - name: Upload release
         if: ${{ github.event_name == 'release' }}
         uses: alexellis/upload-assets@0.4.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_paths: '["build/hshb-nametag.hex"]'
+          asset_paths: '["hshb-nametag.hex"]'

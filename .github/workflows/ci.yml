@@ -22,18 +22,21 @@ jobs:
           ln -s ~/.platformio/penv/bin/platformio ~/.local/bin/platformio
           ln -s ~/.platformio/penv/bin/pio ~/.local/bin/pio
           ln -s ~/.platformio/penv/bin/piodebuggdb ~/.local/bin/piodebuggdb
-          pio run
-          cp .pio/build/ATmega32/firmware.hex hshb-nametag.hex
+          for i in {1..33}; do
+            HSHB_BOARD=$i pio run;
+            cp .pio/build/ATmega32/firmware.hex hshb-nametag-$i.hex;
+          done
         shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hshb-nametag.hex
-          path: hshb-nametag.hex
+          name: hshb-nametag hex files
+          path: |
+            hshb-nametag-*.hex
       - name: Upload release
         if: ${{ github.event_name == 'release' }}
         uses: alexellis/upload-assets@0.4.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_paths: '["hshb-nametag.hex"]'
+          asset_paths: '["hshb-nametag-*.hex"]'

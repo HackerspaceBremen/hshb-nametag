@@ -11,8 +11,10 @@ Building and flashing is done with [PlatformIO](https://platformio.org/).
 Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. If you're using the `pio` binary simply run
 
 ```shell
-$ pio run
+$ HSHB_BOARD=1 pio run
 ```
+
+Replace `HSHB_BOARD=1` with the number of your board (sticker on the back).
 
 ## Flashing
 

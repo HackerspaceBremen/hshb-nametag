@@ -14,7 +14,7 @@ Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. If y
 $ HSHB_BOARD=1 pio run
 ```
 
-Replace `HSHB_BOARD=1` with the number of your board (sticker on the back).
+Replace `HSHB_BOARD=1` with the number of your board (sticker on the back), which is used to select the proper battery calibration values. If you do not provide the `HSHB_BOARD` variable, the code will compile with the calibration data of board 1 by default.
 
 ## Flashing
 

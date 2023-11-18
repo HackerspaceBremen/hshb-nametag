@@ -6,6 +6,8 @@ This repositoy contains the source code for the HSHB Nametag, a PCB designed in 
 
 Building and flashing is done with [PlatformIO](https://platformio.org/).
 
+You can get the latest binaries for all boards in the current [GitHub releases](https://github.com/HackerspaceBremen/hshb-nametag/releases).
+
 ## Building
 
 Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. During development, adjusting the `BOARD_ID` directly in `get_build_flags.py` might be easiest. If you're using the `pio` binary simply run

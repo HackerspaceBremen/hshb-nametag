@@ -15,6 +15,10 @@
 
 #define F(string_literal) (PSTR(string_literal))
 
+// See https://stackoverflow.com/a/5459929
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 uint8_t read_number(uint8_t *msg_pos, uint8_t *err, uint8_t last_number) {
   uint8_t ret = 0;
   if (!isdigit(rx_buf[*msg_pos])) {
@@ -170,7 +174,12 @@ void cmd_set_brightness() {
 void cmd_invalid_command() {
   uart_writeln_flash_str(
       F("Invalid command.\r\nW: Write\r\nR: Read\r\nE: Enable\r\nD: "
-        "Disable\r\nL: List\r\nF: Format\r\nB: Brightness"));
+        "Disable\r\nL: List\r\nF: Format\r\nI: Idenfity\r\nB: Brightness"));
+}
+
+void cmd_identify_board() {
+  uart_writeln_flash_str(
+      F("Board ID: " STR(BOARD_ID) "\nBuild version: " STR(BUILD_VERSION)));
 }
 
 void handle_command_input() {
@@ -189,6 +198,8 @@ void handle_command_input() {
       cmd_list_slots();
     } else if (rx_buf[0] == 'B' || rx_buf[0] == 'b') {
       cmd_set_brightness();
+    } else if (rx_buf[0] == 'I' || rx_buf[0] == 'i') {
+      cmd_identify_board();
     } else {
       cmd_invalid_command();
     }

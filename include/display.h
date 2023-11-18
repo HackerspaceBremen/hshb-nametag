@@ -11,7 +11,7 @@
 #define SYSMSG_BUFFER_SIZE 15
 
 struct DisplayState {
-  uint8_t display_on;
+  uint8_t display_on : 1;
   uint8_t scroll_interval;
   char sysmsg_buffer[SYSMSG_BUFFER_SIZE];
 

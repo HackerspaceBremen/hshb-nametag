@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 struct ADCValues {
-  uint16_t ADCvalue;
+  uint16_t adc_value;
   uint16_t voltage;
   int8_t percent;
 };

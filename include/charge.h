@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 struct ChargeData {
-  uint8_t charging;
-  uint8_t charge_on;
-  uint8_t low_battery;
+  uint8_t charging : 1;
+  uint8_t charge_on : 1;
+  uint8_t low_battery : 1;
   uint32_t last_charge;
 };
 

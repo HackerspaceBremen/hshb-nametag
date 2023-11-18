@@ -22,10 +22,8 @@ volatile struct ButtonState button_state = {
 
 void button_update() {
   button_state.button = (PIND & (1 << 2));
-  if (!button_state.button && button_state.last_button) {
-    button_state.button_press_millis = global_millis;
-    button_state.new_button_event = 1;
-  } else if (button_state.button && !button_state.last_button) {
+  if (button_state.button != button_state.last_button) {
+    if (!button_state.button) button_state.button_press_millis = global_millis;
     button_state.new_button_event = 1;
   }
   button_state.last_button = button_state.button;

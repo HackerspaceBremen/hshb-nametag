@@ -19,7 +19,7 @@ const uint8_t bArray[] PROGMEM = {
     63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
 uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
 
-void resetAnimations(uint8_t clearScreen) {
+void resetAnimations() {
   i = 0;
   j = 0;
   step = 0;
@@ -27,9 +27,6 @@ void resetAnimations(uint8_t clearScreen) {
   counter0 = 0;
   counter1 = 0;
   counter2 = 0;
-  if (clearScreen) {
-    clear_vram_logo();
-  }
 }
 
 uint8_t linesAnimation(uint8_t fill) {

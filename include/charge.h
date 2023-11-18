@@ -1,7 +1,11 @@
 #ifndef CHARGE_H_
 #define CHARGE_H_
 
+#include <avr/io.h>
 #include <stdint.h>
+
+// Charging when this bit is not set
+#define CHARGING_PIN_HIGH (PIND & (1 << 3))
 
 struct ChargeData {
   uint8_t charging : 1;

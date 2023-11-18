@@ -1,7 +1,11 @@
 #include "display.h"
 
 #include <avr/pgmspace.h>
+#include <stdio.h>
 #include <string.h>
+#include <util/delay.h>
+
+#include "animations.h"
 
 char text[100];
 
@@ -797,6 +801,26 @@ uint8_t display_scroll() {
     }
   }
   return 1;
+}
+
+void display_fade_text(const char* text, uint8_t fade_out) {
+  if (text[0])
+    snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, text);
+  clear_vram();
+  display_state.display_on = 1;
+  resetAnimations();
+
+  if (fade_out) {
+    for (uint8_t i = 64; i > 0; i--) {
+      display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 2, i, 0);
+      _delay_ms(20);
+    }
+  } else {
+    for (uint8_t i = 0; i <= 64; i++) {
+      display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 0, i, 0);
+      _delay_ms(20);
+    }
+  }
 }
 
 void clear_vram() {

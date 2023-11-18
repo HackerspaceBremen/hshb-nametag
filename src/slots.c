@@ -146,7 +146,7 @@ void slot_advance() {
   } else {
     if (current_slot.animation != current_slot.last_animation) {
       clear_vram();
-      resetAnimations(0);
+      resetAnimations();
     }
     current_slot.last_animation = current_slot.animation;
   }

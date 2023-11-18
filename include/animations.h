@@ -19,7 +19,7 @@ enum ANIMATIONS {
   INVALID_ANIMATION,
 };
 
-void resetAnimations(uint8_t clearScreen);
+void resetAnimations();
 
 uint8_t linesAnimation(uint8_t fill);
 uint8_t rotateAnimation(uint8_t fill);

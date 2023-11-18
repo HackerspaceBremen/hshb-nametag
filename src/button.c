@@ -21,7 +21,7 @@ volatile struct ButtonState button_state = {
 };
 
 void button_update() {
-  button_state.button = (PIND & (1 << 2));
+  button_state.button = (PIND & (1 << 2)) != 0;
   if (button_state.button != button_state.last_button) {
     if (!button_state.button) button_state.button_press_millis = global_millis;
     button_state.new_button_event = 1;
@@ -29,106 +29,99 @@ void button_update() {
   button_state.last_button = button_state.button;
 }
 
-void button_check() {
-  button_update();
+void on_low_battery() {
+  display_fade_text("Low Battery", 0);
+  display_state.display_on = 0;  // Disable Display
+}
 
-  if (charge_data.low_battery) goto lowBattery;
+void wake_up_routine() {
+  snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, "Start %03d",
+           BOARD_ID);
+  display_fade_text("", 0);
+}
 
-  if (button_state.button && button_state.new_button_event &&
-      global_millis - button_state.button_press_millis >
-          BUTTON_SHORT_PRESS_TIME &&
-      global_millis - button_state.button_press_millis <
-          BUTTON_MEDIUM_PRESS_TIME) {
-    button_state.new_button_event = 0;
-    slot_advance();
-  } else if (!button_state.button && button_state.new_button_event &&
-             global_millis - button_state.button_press_millis >
-                 BUTTON_LONG_PRESS_TIME) {
-    button_state.new_button_event = 0;
+void enter_deepsleep() {
+  // Waits for the button to be released and then enters depsleep
+  display_state.display_on = 0;  // Disable Display
+  while (!button_state.button) button_update();
+  button_state.new_button_event = 0;
+  charge_data.charge_on = 0;
+  _delay_ms(50);
 
-    snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-             "Shutdown");
-    clear_vram();
-    resetAnimations(0);
-    for (uint8_t i = 64; i > 0; i--) {
-      display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 2, i, 0);
-      _delay_ms(20);
+  // Fake deep sleep while charging
+  while (charge_data.charging) {
+    // Do not enter deep sleep while charging
+    button_update();
+
+    if (!button_state.button && button_state.new_button_event &&
+        global_millis - button_state.button_press_millis >
+            BUTTON_LONG_PRESS_TIME) {
+      // Button was pressed, wake back up
+      button_state.new_button_event = 0;
+      wake_up_routine();
+      return;
     }
 
-  shutdownAfterButton:
-    display_state.display_on = 0;  // Disable Display
-    while (!button_state.button) button_update();
-    button_state.new_button_event = 0;
-    charge_data.charge_on = 0;
-    _delay_ms(50);
-    // Fake Deepsleep
-    while (charge_data.charging) {
-      button_update();
-
-      if (!button_state.button && button_state.new_button_event &&
-          global_millis - button_state.button_press_millis >
-              BUTTON_LONG_PRESS_TIME) {
-        button_state.new_button_event = 0;
-        goto skipDeepSleep;  // Skip Deepsleep
-      }
-
-      if ((PIND & (1 << 3))) {
-        charge_data.charging = 0;
-      }
-
-      _delay_ms(50);
+    if (CHARGING_PIN_HIGH) {
+      // Continue to deep sleep
+      charge_data.charging = 0;
+      break;
     }
-    // Real Deepsleep
-    _delay_ms(50);
 
-  beforeDeepSleep:
+    _delay_ms(50);
+  }
+
+  // Real deep sleep
+  _delay_ms(50);
+
+  while (1) {
     deep_sleep();
+
+    // Deep sleep can only be exited by pressing the button for the long press
+    // time
     button_update();
     while (global_millis - button_state.button_press_millis <
            BUTTON_LONG_PRESS_TIME) {
       button_update();
-      if (button_state.button) goto beforeDeepSleep;
+      if (!button_state.button) break;
     }
+
+    if (button_state.button) {
+      // The button is still pressed, wake up
+      break;
+    }
+  }
+
+  button_state.new_button_event = 0;
+  if (charge_data.low_battery) {
+    on_low_battery();
+  }
+
+  wake_up_routine();
+}
+
+void button_check() {
+  button_update();
+
+  if (charge_data.low_battery) {
+    on_low_battery();
+    enter_deepsleep();
+  };
+
+  uint32_t button_press_duration =
+      global_millis - button_state.button_press_millis;
+  if (button_state.button && button_state.new_button_event &&
+      button_press_duration > BUTTON_SHORT_PRESS_TIME &&
+      button_press_duration < BUTTON_MEDIUM_PRESS_TIME) {
     button_state.new_button_event = 0;
-
-    if (charge_data.low_battery) {
-      snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-               "Low Battery");
-      clear_vram();
-
-      display_state.display_on = 1;  // Enable Display
-
-      for (uint8_t i = 0; i <= 64; i++) {
-        display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 0, i, 0);
-        _delay_ms(20);
-      }
-
-    lowBattery:
-      _delay_ms(1000);
-
-      for (uint8_t i = 64; i > 0; i--) {
-        display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 0, i, 0);
-        _delay_ms(20);
-      }
-
-      display_state.display_on = 0;  // Disable Display
-
-      goto shutdownAfterButton;
-    }
-
-  skipDeepSleep:
-    snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-             "Start %03d", BOARD_ID);
-    clear_vram();
-    display_state.display_on = 1;  // Enable Display
-    for (uint8_t i = 0; i <= 64; i++) {
-      display_write_text(4, (char*)display_state.sysmsg_buffer, 1, 1, i, 0);
-      _delay_ms(20);
-    }
-    // After Real Deepsleep
+    slot_advance();
   } else if (!button_state.button && button_state.new_button_event &&
-             global_millis - button_state.button_press_millis >
-                 BUTTON_MEDIUM_PRESS_TIME) {
+             button_press_duration > BUTTON_LONG_PRESS_TIME) {
+    button_state.new_button_event = 0;
+    display_fade_text("Shutdown", 1);
+    enter_deepsleep();
+  } else if (!button_state.button && button_state.new_button_event &&
+             button_press_duration > BUTTON_MEDIUM_PRESS_TIME) {
     fillLogoPercent(adc_values.percent, 19, 32, 1);
     snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
              "Battery %d%%", adc_values.percent);

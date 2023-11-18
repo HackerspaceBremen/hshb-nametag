@@ -47,7 +47,7 @@ void battery_check() {
     if (!charge_data.charging && adc_values.voltage <= 3500) {
       charge_data.charge_on = 0;
       charge_data.low_battery = 1;
-      resetAnimations(0);
+      resetAnimations();
       clear_vram();
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
                "Low Battery");
@@ -59,14 +59,14 @@ void battery_check() {
 }
 
 void handle_state() {
-  if (!(PIND & (1 << 3))) {
+  if (!CHARGING_PIN_HIGH) {
     if (!charge_data.charging) {
       charge_data.charging = 1;
       charge_data.low_battery = 0;
       // Enable receiver and transmitter
       uart_enable();
     }
-  } else if ((PIND & (1 << 3))) {
+  } else if (CHARGING_PIN_HIGH) {
     if (charge_data.charging) {
       charge_data.charging = 0;
       // Disable receiver and transmitter
@@ -79,7 +79,7 @@ void handle_state() {
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
                "Shutdown");
       clear_vram();
-      resetAnimations(0);
+      resetAnimations();
       for (uint8_t i = 64; i > 0; i--) {
         display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 2, i, 0);
         _delay_ms(20);

@@ -37,6 +37,8 @@ uint8_t display_scroll();
 uint8_t display_scrolling();
 void display_scroll_stop();
 
+void display_fade_text(const char* text, uint8_t fade_out);
+
 void clear_vram();
 void clear_vram_text();
 void clear_vram_logo();

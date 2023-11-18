@@ -3,6 +3,15 @@
 
 #include <stdint.h>
 
+/**
+ * Button press duration
+ * - Lower than short press time: ignore (debouncing)
+ * - Between short and medium press time: advance to next slot immediately
+ * - Between medium and long press time: Display battery state (percent &
+ * voltage)
+ * - Higher than long press time: Shutdown
+ */
+#define BUTTON_SHORT_PRESS_TIME 100
 #define BUTTON_MEDIUM_PRESS_TIME 1000
 #define BUTTON_LONG_PRESS_TIME 2000
 

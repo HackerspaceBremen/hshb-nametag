@@ -35,8 +35,10 @@ void button_check() {
   if (charge_data.low_battery) goto lowBattery;
 
   if (button_state.button && button_state.new_button_event &&
-      global_millis - button_state.button_press_millis > 100 &&
-      global_millis - button_state.button_press_millis < 1000) {
+      global_millis - button_state.button_press_millis >
+          BUTTON_SHORT_PRESS_TIME &&
+      global_millis - button_state.button_press_millis <
+          BUTTON_MEDIUM_PRESS_TIME) {
     button_state.new_button_event = 0;
     slot_advance();
   } else if (!button_state.button && button_state.new_button_event &&

@@ -43,7 +43,7 @@ void cmd_write_slot() {
   saveSlot.scaler = read_number(&msg_pos, &err);
   saveSlot.char_space = read_number(&msg_pos, &err);
   if (err) {
-    uartWriteLn(
+    uart_writeln_flash_str(
         F("W <Slot> <Animation> <Seconds/Scrolls> <Text Type> "
           "<Offset/Scroll Speed> <Scaler> <Char Space> <Text>"));
     return;
@@ -55,7 +55,7 @@ void cmd_write_slot() {
   saveSlot.text[rx_len - msg_pos] = 0;
   save_slot(&saveSlot);
   print_slot(&saveSlot);
-  uart_tx = 1;
+  uart_enable_tx();
 }
 
 void cmd_read_slot() {
@@ -67,9 +67,9 @@ void cmd_read_slot() {
   if (!err) {
     load_slot(&readSlot);
     print_slot(&readSlot);
-    uart_tx = 1;
+    uart_enable_tx();
   } else {
-    uartWriteLn(F("R <Slot>"));
+    uart_writeln_flash_str(F("R <Slot>"));
   }
 }
 
@@ -88,9 +88,9 @@ void cmd_disable_slot() {
     tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE, "Slot %d disabled.\r\n",
                       slot_no);
   } else {
-    uartWriteLn(F("D <Slot>"));
+    uart_writeln_flash_str(F("D <Slot>"));
   }
-  uart_tx = 1;
+  uart_enable_tx();
 }
 
 void cmd_enable_slot() {
@@ -100,9 +100,9 @@ void cmd_enable_slot() {
     tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE, "Slot %d enabled.\r\n",
                       slot_no);
   } else {
-    uartWriteLn(F("E <Slot>"));
+    uart_writeln_flash_str(F("E <Slot>"));
   }
-  uart_tx = 1;
+  uart_enable_tx();
 }
 
 void cmd_format_slots() {
@@ -123,9 +123,9 @@ void cmd_format_slots() {
       }
       tx_len = snprintf((char *)tx_buf, TX_BUFFER_SIZE, "Memory cleared\r\n");
     } else {
-      uartWriteLn(F("F <Slot/All>"));
+      uart_writeln_flash_str(F("F <Slot/All>"));
     }
-    uart_tx = 1;
+    uart_enable_tx();
   }
 }
 
@@ -138,9 +138,9 @@ void cmd_list_slots() {
     preview_slot(&slot);
   }
   if (tx_len == 0) {
-    uartWriteLn(F("No Data..."));
+    uart_writeln_flash_str(F("No Data..."));
   }
-  uart_tx = 1;
+  uart_enable_tx();
 }
 
 void cmd_set_brightness() {
@@ -152,7 +152,8 @@ void cmd_set_brightness() {
   }
 
   if (err) {
-    uartWriteLn(F("B <Logo Bright> <Logo Dark> <Text Bright> <Text Dark>"));
+    uart_writeln_flash_str(
+        F("B <Logo Bright> <Logo Dark> <Text Bright> <Text Dark>"));
   } else {
     display_settings.animationOnBrightness = values[0];
     display_settings.animationOffBrightness = values[1];
@@ -162,7 +163,7 @@ void cmd_set_brightness() {
 }
 
 void cmd_invalid_command() {
-  uartWriteLn(
+  uart_writeln_flash_str(
       F("Invalid command.\r\nW: Write\r\nR: Read\r\nE: Enable\r\nD: "
         "Disable\r\nL: List\r\nF: Format\r\nB: Brightness"));
 }

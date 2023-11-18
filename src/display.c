@@ -19,7 +19,7 @@ volatile uint8_t line = 0;
 volatile uint8_t scaleCounter = 0;
 volatile uint8_t scrolling = 0;
 
-struct DisplaySettings display_settings = {
+volatile struct DisplaySettings display_settings = {
     .animationOnBrightness = 32,
     .animationOffBrightness = 0,
     .textOnBrightness = 64,

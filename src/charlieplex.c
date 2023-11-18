@@ -1,6 +1,9 @@
 #include "charlieplex.h"
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
+
+#include "uart.h"
 
 extern uint8_t vRAM[522];
 
@@ -23,6 +26,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop0\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[1]));
@@ -133,6 +138,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop10\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[11]));
@@ -243,6 +250,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop20\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[21]));
@@ -353,6 +362,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop30\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[31]));
@@ -463,6 +474,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop40\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[41]));
@@ -572,6 +585,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop50\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[51]));
@@ -681,6 +696,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop60\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[61]));
@@ -790,6 +807,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop70\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[71]));
@@ -899,6 +918,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop80\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[81]));
@@ -1007,6 +1028,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop90\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[91]));
@@ -1116,6 +1139,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop100\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[101]));
@@ -1232,6 +1257,8 @@ void refreshDisplay() {
         "brne delay_loop110\n\t");
     PORTB = DDRB = tmp;
     DDRD &= 0b01111111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[111]));
@@ -1352,6 +1379,8 @@ void refreshDisplay() {
         "brne delay_loop120\n\t");
     PORTB = DDRB = tmp;
     DDRD &= 0b11011111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[121]));
@@ -1472,6 +1501,8 @@ void refreshDisplay() {
         "brne delay_loop130\n\t");
     PORTB = DDRB = tmp;
     DDRD &= 0b11101111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[131]));
@@ -1591,6 +1622,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop140\n\t");
     PORTB = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[141]));
@@ -1699,6 +1732,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop150\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[151]));
@@ -1808,6 +1843,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop160\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[161]));
@@ -1917,6 +1954,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop170\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[171]));
@@ -2026,6 +2065,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop180\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[181]));
@@ -2135,6 +2176,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop190\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[191]));
@@ -2245,6 +2288,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop200\n\t");
     PORTC = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[201]));
@@ -2355,6 +2400,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop210\n\t");
     PORTB = DDRB = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[211]));
@@ -2465,6 +2512,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop220\n\t");
     PORTC = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[221]));
@@ -2575,6 +2624,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop230\n\t");
     PORTC = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[231]));
@@ -2684,6 +2735,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop240\n\t");
     PORTC = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[241]));
@@ -2800,6 +2853,8 @@ void refreshDisplay() {
         "brne delay_loop250\n\t");
     PORTC = DDRC = tmp;
     DDRD &= 0b01111111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[251]));
@@ -2920,6 +2975,8 @@ void refreshDisplay() {
         "brne delay_loop260\n\t");
     PORTC = DDRC = tmp;
     DDRD &= 0b11011111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[261]));
@@ -3040,6 +3097,8 @@ void refreshDisplay() {
         "brne delay_loop270\n\t");
     PORTC = DDRC = tmp;
     DDRD &= 0b11101111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[271]));
@@ -3159,6 +3218,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop280\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[281]));
@@ -3290,6 +3351,8 @@ void refreshDisplay() {
     PORTD &= 0b10111111;
     DDRD &= 0b10111111;
     DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[291]));
@@ -3424,6 +3487,8 @@ void refreshDisplay() {
     PORTA &= 0b11110111;
     DDRA &= 0b11110111;
     DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[301]));
@@ -3552,6 +3617,8 @@ void refreshDisplay() {
     PORTD &= 0b01111111;
     DDRD &= 0b01111111;
     DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[311]));
@@ -3686,6 +3753,8 @@ void refreshDisplay() {
     PORTD &= 0b11101111;
     DDRD &= 0b11101111;
     DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[321]));
@@ -3812,6 +3881,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop330\n\t");
     PORTC = DDRC = DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[331]));
@@ -3946,6 +4017,8 @@ void refreshDisplay() {
     PORTD &= 0b11011111;
     DDRD &= 0b11011111;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[341]));
@@ -4077,6 +4150,8 @@ void refreshDisplay() {
         "dec r16\n\t"
         "brne delay_loop350\n\t");
     PORTC = DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[351]));
@@ -4208,6 +4283,8 @@ void refreshDisplay() {
     PORTD &= 0b10111111;
     DDRD &= 0b10111111;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[361]));
@@ -4342,6 +4419,8 @@ void refreshDisplay() {
     PORTA &= 0b11110111;
     DDRA &= 0b11110111;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[371]));
@@ -4470,6 +4549,8 @@ void refreshDisplay() {
     PORTD &= 0b01111111;
     DDRD &= 0b01111111;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[381]));
@@ -4606,6 +4687,8 @@ void refreshDisplay() {
     PORTD &= 0b11101111;
     DDRD &= 0b11101111;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[391]));
@@ -4730,6 +4813,8 @@ void refreshDisplay() {
         "brne delay_loop400\n\t");
     PORTC = DDRC = tmp;
     DDRD &= 0b11011111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[401]));
@@ -4852,6 +4937,8 @@ void refreshDisplay() {
         "brne delay_loop410\n\t");
     PORTD &= 0b11011111;
     DDRD &= 0b00001111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[411]));
@@ -4984,6 +5071,8 @@ void refreshDisplay() {
         "brne delay_loop420\n\t");
     PORTA &= 0b11111101;
     DDRA &= 0b11110000;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[421]));
@@ -5110,6 +5199,8 @@ void refreshDisplay() {
         "brne delay_loop430\n\t");
     PORTA &= 0b11111110;
     DDRA &= 0b11110000;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[431]));
@@ -5244,6 +5335,8 @@ void refreshDisplay() {
     PORTA &= 0b11111101;
     DDRA &= 0b11111101;
     DDRC = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[441]));
@@ -5374,6 +5467,8 @@ void refreshDisplay() {
     PORTA &= 0b11111101;
     DDRA &= 0b11111101;
     DDRD &= 0b11011111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[451]));
@@ -5504,6 +5599,8 @@ void refreshDisplay() {
         "brne delay_loop460\n\t");
     PORTA &= 0b11111110;
     DDRA &= 0b11110000;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[461]));
@@ -5638,6 +5735,8 @@ void refreshDisplay() {
     PORTA &= 0b11111011;
     DDRA &= 0b11111011;
     DDRB = tmp;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[471]));
@@ -5770,6 +5869,8 @@ void refreshDisplay() {
         "brne delay_loop480\n\t");
     PORTB = DDRB = tmp;
     DDRA &= 0b11111011;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[481]));
@@ -5906,6 +6007,8 @@ void refreshDisplay() {
     PORTA &= 0b11111110;
     DDRA &= 0b11111110;
     DDRD &= 0b11011111;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[491]));
@@ -6036,6 +6139,8 @@ void refreshDisplay() {
     PORTD &= 0b11011111;
     DDRD &= 0b11011111;
     DDRA &= 0b11111110;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[501]));
@@ -6168,6 +6273,8 @@ void refreshDisplay() {
     PORTD &= 0b01111111;
     DDRD &= 0b01111111;
     DDRA &= 0b11111110;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[511]));
@@ -6298,6 +6405,8 @@ void refreshDisplay() {
         "brne delay_loop520\n\t");
     PORTB = DDRB = tmp;
     DDRA &= 0b11111011;
+
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
   }
 
   asm volatile("lds %0, %1\n\t" : "=r"(tmp) : "i"(&vRAM[521]));

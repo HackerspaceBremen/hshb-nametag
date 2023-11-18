@@ -11,18 +11,15 @@
 #include <string.h>
 #include <util/delay.h>
 
+#include "adc.h"
 #include "animations.h"
-#include "calibration_data.h"
+// #include "calibration_data.h"
 #include "charlieplex.h"
 #include "cmd.h"
 #include "display.h"
 #include "logo.h"
 #include "slots.h"
 #include "uart.h"
-#define BAUD 300
-
-// Calculate the UBRR value for the desired baud rate
-#define UBRR_VAL ((F_CPU / (16UL * BAUD)) - 1)
 
 void checkButton();
 void deepSleep();
@@ -36,20 +33,13 @@ uint8_t volatile vRAM[522];
 volatile uint32_t millis = 0;
 volatile uint8_t adcTimerCounter = 0;
 volatile uint8_t scrollTimerCounter = 0;
-volatile uint16_t ADCvalue = 0;
 volatile uint8_t displayOn = 1;
-
-volatile uint16_t voltage;
-volatile int8_t percent;
-uint8_t charging = 0;
-uint8_t chargeOn = 0;
-uint32_t lastCharge = 0;
 
 struct Slot currentSlot = {
     .slot_no = SLOT_MAX,
     .slot_loaded_millis = 0,
     .scroll_counter = 0,
-    .last_animation = UINT8_MAX,
+    .last_animation = INVALID_ANIMATION,
 };
 
 // Set to 1 to advance slot after finishing current drawing
@@ -80,7 +70,7 @@ void advance_slot() {
       break;
     }
   }
-  if (currentSlot.last_animation == UINT8_MAX) {
+  if (currentSlot.last_animation == INVALID_ANIMATION) {
     // Initialize last_animation to prevent flickering
     currentSlot.last_animation = currentSlot.animation;
   }
@@ -173,8 +163,8 @@ void battery_check() {
   static uint32_t lastBatCheck = 0;
   if ((uint32_t)(millis - lastBatCheck) >= 1000) {
     lastBatCheck = millis;
-    if (!charging && voltage <= 3500) {
-      chargeOn = 0;
+    if (!adc_values.charging && adc_values.voltage <= 3500) {
+      adc_values.chargeOn = 0;
       lowBat = 1;
       resetAnimations(0);
       for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
@@ -188,21 +178,21 @@ void battery_check() {
 
 void handle_state() {
   if (!(PIND & (1 << 3))) {
-    if (!charging) {
-      charging = 1;
+    if (!adc_values.charging) {
+      adc_values.charging = 1;
       lowBat = 0;
       // Enable receiver and transmitter
-      UCSRB |= 1 << RXEN | 1 << TXEN;
+      uart_enable();
     }
   } else if ((PIND & (1 << 3))) {
-    if (charging) {
-      charging = 0;
+    if (adc_values.charging) {
+      adc_values.charging = 0;
       // Disable receiver and transmitter
-      UCSRB &= ~(1 << RXEN | 1 << TXEN);
-      lastCharge = millis;
+      uart_disable();
+      adc_values.lastCharge = millis;
     }
-    if (chargeOn && millis - lastCharge > 3000) {
-      chargeOn = 0;
+    if (adc_values.chargeOn && millis - adc_values.lastCharge > 3000) {
+      adc_values.chargeOn = 0;
       snprintf(battBuffer, BATT_BUFFER_SIZE, "Shutdown");
       for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
       resetAnimations(0);
@@ -217,20 +207,13 @@ void handle_state() {
 
 int main(void) {
   // Initialize all pixels to zero
-  for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
+  clearVRAM();
 
   // ######### Initialize UART #########
-  // Set baud rate
-  UBRRH = (unsigned char)(UBRR_VAL >> 8);
-  UBRRL = (unsigned char)UBRR_VAL;
-  // Set frame format: 8data, 1stop bit
-  UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0);
+  uart_initialize();
 
   // ######### Initialize ADC #########
-  // Set ADC MUX to ADC2 (pin PC2)
-  ADMUX |= (1 << MUX2) | (1 << MUX0);
-  // Enable ADC interrupt and set prescaler to 128 (8 MHz / 128 = 62.5 kHz)
-  ADCSRA |= (1 << ADIE) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+  adc_init();
 
   // ######### Initialize Timer 1 #########
   TCCR1B = (1 << WGM12) | (1 << CS11);  // CTC Mode
@@ -264,9 +247,9 @@ int main(void) {
     if ((uint32_t)(millis - lastRefresh) >= 20) {
       lastRefresh = millis;
 
-      if (chargeOn) {
-        fillLogoPercent(percent, 19, 32, 1);
-        if (charging) {
+      if (adc_values.chargeOn) {
+        fillLogoPercent(adc_values.percent, 19, 32, 1);
+        if (adc_values.charging) {
           if (!(PINA & (1 << 7))) {
             logoDrawLine(0, 0, 14, 0, 32);
             snprintf(battBuffer, BATT_BUFFER_SIZE, "Battery Full");
@@ -276,7 +259,8 @@ int main(void) {
             writeText(3, battBuffer, 1, 2, 64, 0);
           }
         } else {
-          snprintf(battBuffer, BATT_BUFFER_SIZE, "Battery %d%%", percent);
+          snprintf(battBuffer, BATT_BUFFER_SIZE, "Battery %d%%",
+                   adc_values.percent);
           writeText(0, battBuffer, 1, 0, 64, 0);
         }
       } else {
@@ -344,10 +328,10 @@ void checkButton() {
     displayOn = 0;  // Disable Display
     while (!button) updateButton();
     newButtonEvent = 0;
-    chargeOn = 0;
+    adc_values.chargeOn = 0;
     _delay_ms(50);
     // Fake Deepsleep
-    while (charging) {
+    while (adc_values.charging) {
       updateButton();
 
       if (!button && newButtonEvent &&
@@ -357,7 +341,7 @@ void checkButton() {
       }
 
       if ((PIND & (1 << 3))) {
-        charging = 0;
+        adc_values.charging = 0;
       }
 
       _delay_ms(50);
@@ -399,7 +383,7 @@ void checkButton() {
     }
 
   skipDeepSleep:
-    snprintf(battBuffer, BATT_BUFFER_SIZE, "Start %03d", BOARD_ID);
+    // snprintf(battBuffer, BATT_BUFFER_SIZE, "Start %03d", BOARD_ID);
     for (uint16_t i = TEXT_START; i < LOGO_END; i++) vRAM[i] = 0;
     displayOn = 1;  // Enable Display
     for (uint8_t i = 0; i <= 64; i++) {
@@ -409,11 +393,11 @@ void checkButton() {
     // After Real Deepsleep
   } else if (!button && newButtonEvent &&
              millis - buttonPressMillis > MEDIUM_PRESS_TIME) {
-    fillLogoPercent(percent, 19, 32, 1);
-    snprintf(battBuffer, BATT_BUFFER_SIZE, "Battery %d%%", percent);
+    fillLogoPercent(adc_values.percent, 19, 32, 1);
+    snprintf(battBuffer, BATT_BUFFER_SIZE, "Battery %d%%", adc_values.percent);
     writeText(0, battBuffer, 1, 0, 64, 0);
     _delay_ms(500);
-    snprintf(battBuffer, BATT_BUFFER_SIZE, "%d Volt", voltage + 5);
+    snprintf(battBuffer, BATT_BUFFER_SIZE, "%d Volt", adc_values.voltage + 5);
     battBuffer[3] = battBuffer[2];
     battBuffer[2] = battBuffer[1];
     battBuffer[1] = '.';
@@ -426,11 +410,9 @@ void deepSleep() {
   // Ensure Voltage Divider is Off
   PORTA |= (1 << 6);
   // Ensure ADC is disabled
-  ADCSRA &= ~(1 << ADEN);
-  // Ensure internal voltage reference is disabled
-  ADMUX &= ~(1 << REFS0 | 1 << REFS1);
+  adc_disable();
   // Ensure UART receiver and transmitter are disabled
-  UCSRB &= ~(1 << RXEN | 1 << TXEN);
+  uart_disable();
 
   MCUCR |= (1 << SM1);  // Set sleep mode to Power Off
   GICR |= (1 << INT0);  // Enable INT0 for wake up
@@ -448,8 +430,6 @@ void deepSleep() {
 
   GICR &= ~(1 << INT0);  // Disable INT0
   GICR &= ~(1 << INT1);  // Disable INT1
-
-  // ADCSRA |= (1 << ADEN);	// Enable ADC
 }
 
 ISR(INT0_vect) {
@@ -458,12 +438,14 @@ ISR(INT0_vect) {
 
 ISR(INT1_vect) {
   // Needed for wakeup on charging
-  chargeOn = 1;
+  adc_values.chargeOn = 1;
   lowBat = 0;
 }
 
 ISR(TIMER1_COMPA_vect) {
   if (displayOn) refreshDisplay();
+
+  if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
 
   scrollTimerCounter++;
 
@@ -477,46 +459,11 @@ ISR(TIMER1_COMPA_vect) {
     adcTimerCounter = 0;
     // Voltage Divider On (active low)
     PORTA &= ~(1 << 6);
-    ADMUX |= (1 << REFS0) | (1 << REFS1);  // Select internal 2.56V reference
-    ADCSRA |= (1 << ADEN);                 // Enable ADC
+    adc_enable();                              // Enable ADC
+    if (UCSRA & (1 << RXC)) uart_handle_rx();  // Check UART
     _delay_us(600);
-    ADCSRA |= (1 << ADSC);
+    adc_start_conversion();
   }
-
-  handleUART();
 
   millis += 10;
-}
-
-ISR(ADC_vect) {
-  ADCvalue = ADC;
-  // Voltage Divider Off (active low)
-  PORTA |= (1 << 6);
-  voltage = (uint32_t)(ADCvalue + ADC_OFFSET) * ADC_GAIN / 1000;
-
-  if (charging) {
-    if (ADCvalue < CHARGE_MIN_ADC) {
-      // percent = pgm_read_byte(&chargeLUT[0]);
-      percent = 0;
-    } else if (ADCvalue <= CHARGE_MAX_ADC) {
-      percent = pgm_read_byte(&chargeLUT[ADCvalue - CHARGE_MIN_ADC]);
-    } else {
-      // percent = pgm_read_byte(&chargeLUT[CHARGE_MAX_ADC-DISCHARGE_MIN_ADC]);
-      percent = 100;
-    }
-  } else {
-    if (ADCvalue < DISCHARGE_MIN_ADC) {
-      // percent = pgm_read_byte(&dischargeLUT[0]);
-      percent = 0;
-    } else if (ADCvalue <= DISCHARGE_MAX_ADC) {
-      percent = pgm_read_byte(&dischargeLUT[ADCvalue - DISCHARGE_MIN_ADC]);
-    } else {
-      // percent =
-      // pgm_read_byte(&dischargeLUT[DISCHARGE_MAX_ADC-DISCHARGE_MIN_ADC]);
-      percent = 100;
-    }
-  }
-
-  ADCSRA &= ~(1 << ADEN);               // Disable ADC
-  ADMUX &= ~(1 << REFS0 | 1 << REFS1);  // Disable internal voltage reference
 }

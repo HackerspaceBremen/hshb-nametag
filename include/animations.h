@@ -14,6 +14,9 @@ enum ANIMATIONS {
   ROTATE,
   ROTATE_FILLED,
   CIRCLES,
+
+  // Needed to identify last animation value
+  INVALID_ANIMATION,
 };
 
 void resetAnimations(uint8_t clearScreen);

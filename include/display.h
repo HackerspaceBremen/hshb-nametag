@@ -16,7 +16,7 @@ struct DisplaySettings {
   uint8_t textOffBrightness;
 };
 
-extern struct DisplaySettings display_settings;
+extern volatile struct DisplaySettings display_settings;
 
 extern char text[100];
 

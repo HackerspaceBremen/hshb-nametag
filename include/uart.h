@@ -13,10 +13,14 @@ extern volatile char rx_buf[RX_BUFFER_SIZE];
 extern volatile uint8_t rx_len;
 
 extern volatile uint8_t uart_rx;
-extern volatile uint8_t uart_tx;
 
-void handleUART();
+void uart_initialize();
+void uart_enable();
+void uart_disable();
 
-uint8_t uartWriteLn(const char *flashStr);
+void uart_handle_rx();
+uint8_t uart_writeln_flash_str(const char *flashStr);
+void uart_enable_tx();
+void uart_disable_tx();
 
 #endif

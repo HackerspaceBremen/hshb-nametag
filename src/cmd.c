@@ -182,25 +182,44 @@ void cmd_identify_board() {
       F("Board ID: " STR(BOARD_ID) "\nBuild version: " STR(BUILD_VERSION)));
 }
 
+struct command {
+  const char letter;
+  uint8_t takes_arguments;
+  void (*function)();
+};
+
+static struct command AVAILABLE_COMMANDS[] = {
+    {.letter = 'W', .takes_arguments = 1, .function = cmd_write_slot},
+    {.letter = 'R', .takes_arguments = 1, .function = cmd_read_slot},
+    {.letter = 'D', .takes_arguments = 1, .function = cmd_disable_slot},
+    {.letter = 'E', .takes_arguments = 1, .function = cmd_enable_slot},
+    {.letter = 'F', .takes_arguments = 1, .function = cmd_format_slots},
+    {.letter = 'L', .takes_arguments = 0, .function = cmd_list_slots},
+    {.letter = 'I', .takes_arguments = 0, .function = cmd_identify_board},
+
+    // Experimental commands:
+    {.letter = 'B', .takes_arguments = 1, .function = cmd_set_brightness},
+
+    // End of list
+    {.letter = '\0', .takes_arguments = 0, .function = cmd_invalid_command},
+};
+
 void handle_command_input() {
   if (uart_rx) {
-    if (rx_buf[0] == 'W' || rx_buf[0] == 'w') {
-      cmd_write_slot();
-    } else if (rx_buf[0] == 'R' || rx_buf[0] == 'r') {
-      cmd_read_slot();
-    } else if (rx_buf[0] == 'D' || rx_buf[0] == 'd') {
-      cmd_disable_slot();
-    } else if (rx_buf[0] == 'E' || rx_buf[0] == 'e') {
-      cmd_enable_slot();
-    } else if (rx_buf[0] == 'F' || rx_buf[0] == 'f') {
-      cmd_format_slots();
-    } else if (rx_len == 1 && (rx_buf[0] == 'L' || rx_buf[0] == 'l')) {
-      cmd_list_slots();
-    } else if (rx_buf[0] == 'B' || rx_buf[0] == 'b') {
-      cmd_set_brightness();
-    } else if (rx_buf[0] == 'I' || rx_buf[0] == 'i') {
-      cmd_identify_board();
-    } else {
+    uint8_t cmd = 0;
+    for (cmd = 0; AVAILABLE_COMMANDS[cmd].letter != '\0'; cmd++) {
+      if (AVAILABLE_COMMANDS[cmd].takes_arguments) {
+        if (rx_len == 1) continue;
+      } else {
+        if (rx_len > 1) continue;
+      }
+      if (toupper(rx_buf[0]) == AVAILABLE_COMMANDS[cmd].letter) {
+        AVAILABLE_COMMANDS[cmd].function();
+        break;
+      }
+    }
+
+    if (AVAILABLE_COMMANDS[cmd].letter == '\0') {
       cmd_invalid_command();
     }
 

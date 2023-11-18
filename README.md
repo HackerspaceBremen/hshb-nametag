@@ -16,6 +16,8 @@ $ BOARD_ID=1 pio run
 
 Replace `BOARD_ID=1` with the number of your board (sticker on the back), which is used to select the proper battery calibration values. If you do not provide the `BOARD_ID` variable, the code will compile with the calibration data of board 1 by default.
 
+If `git` is available in your `$PATH`, the binaries will include a build version like `vX.Y.Z-N-shorthash` in their identification string.
+
 ## Flashing
 
 Flash the project by using the appropriate button in your PlatformIO IDE. If you're using the `pio` binary run

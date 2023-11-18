@@ -8,13 +8,13 @@ Building and flashing is done with [PlatformIO](https://platformio.org/).
 
 ## Building
 
-Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. If you're using the `pio` binary simply run
+Open the project folder in a PlatformIO IDE (VS Codium, etc.) and build it. During development, adjusting the `BOARD_ID` directly in `get_build_flags.py` might be easiest. If you're using the `pio` binary simply run
 
 ```shell
-$ HSHB_BOARD=1 pio run
+$ BOARD_ID=1 pio run
 ```
 
-Replace `HSHB_BOARD=1` with the number of your board (sticker on the back), which is used to select the proper battery calibration values. If you do not provide the `HSHB_BOARD` variable, the code will compile with the calibration data of board 1 by default.
+Replace `BOARD_ID=1` with the number of your board (sticker on the back), which is used to select the proper battery calibration values. If you do not provide the `BOARD_ID` variable, the code will compile with the calibration data of board 1 by default.
 
 ## Flashing
 

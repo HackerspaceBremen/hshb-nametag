@@ -5,8 +5,6 @@
 
 char text[100];
 
-extern uint8_t vRAM[522];
-
 uint8_t scaler = 1;
 uint8_t charWidth = 7;
 
@@ -19,12 +17,17 @@ volatile uint8_t line = 0;
 volatile uint8_t scaleCounter = 0;
 volatile uint8_t scrolling = 0;
 
-volatile struct DisplaySettings display_settings = {
-    .animationOnBrightness = 32,
-    .animationOffBrightness = 0,
-    .textOnBrightness = 64,
-    .textOffBrightness = 0,
+volatile struct DisplayState display_state = {
+    .display_on = 1,
+    .scroll_interval = 0,
+    .sysmsg_buffer = "",
+    .animation_brightness_on = 32,
+    .animation_brightness_off = 0,
+    .text_brightness_on = 64,
+    .text_brightness_off = 0,
 };
+
+volatile uint8_t vRAM[522];
 
 // clang-format off
 const uint8_t charset[][5] PROGMEM = {
@@ -703,8 +706,8 @@ uint8_t specialChar(uint8_t c, uint8_t l) {
   }
 }
 
-void writeText(uint16_t x, char t[], uint8_t s, uint8_t c, uint8_t onBright,
-               uint8_t offBright) {
+void display_write_text(uint16_t x, char t[], uint8_t s, uint8_t c,
+                        uint8_t onBright, uint8_t offBright) {
   scrolling = 0;
   x *= 7;
   if (x >= 420) return;
@@ -740,8 +743,8 @@ void writeText(uint16_t x, char t[], uint8_t s, uint8_t c, uint8_t onBright,
   }
 }
 
-void writeScroll(char t[], uint8_t s, uint8_t c, uint8_t onBright,
-                 uint8_t offBright) {
+void display_write_scroll(char t[], uint8_t s, uint8_t c, uint8_t onBright,
+                          uint8_t offBright) {
   textLength = strlen(t);
   memcpy(text, t, textLength);
   scaler = s;
@@ -754,16 +757,17 @@ void writeScroll(char t[], uint8_t s, uint8_t c, uint8_t onBright,
   scrolling = 1;
 }
 
-uint8_t scrollingDisplay() { return scrolling; }
+uint8_t display_scrolling() { return scrolling; }
 
-void scrollStop() { scrolling = 0; }
+void display_scroll_stop() { scrolling = 0; }
 
-uint8_t scrollDisplay() {
+uint8_t display_scroll() {
   if (!scrolling) {
     return 0;
   }
 
-  for (uint8_t i = 0; i < 59; i++) memcpy(vRAM + i * 7, vRAM + i * 7 + 7, 7);
+  for (uint8_t i = 0; i < 59; i++)
+    memcpy((uint8_t*)vRAM + i * 7, (uint8_t*)vRAM + i * 7 + 7, 7);
 
   uint8_t curChar = pos % charWidth;
   if (!scaleCounter && pos < textWidth && curChar < 5) {
@@ -795,6 +799,15 @@ uint8_t scrollDisplay() {
   return 1;
 }
 
-void clearVRAM() {
-  for (uint16_t k = TEXT_START; k < LOGO_END; k++) vRAM[k] = 0;
+void clear_vram() {
+  clear_vram_text();
+  clear_vram_logo();
+}
+
+void clear_vram_text() {
+  for (uint16_t k = TEXT_START; k < TEXT_END; k++) vRAM[k] = 0;
+}
+
+void clear_vram_logo() {
+  for (uint16_t k = LOGO_START; k < LOGO_END; k++) vRAM[k] = 0;
 }

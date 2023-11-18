@@ -3,6 +3,7 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,14 +15,18 @@
 
 #define F(string_literal) (PSTR(string_literal))
 
-uint8_t read_number(uint8_t *msg_pos, uint8_t *err) {
+uint8_t read_number(uint8_t *msg_pos, uint8_t *err, uint8_t last_number) {
   uint8_t ret = 0;
-  while (rx_buf[*msg_pos] != ' ') {
+  if (!isdigit(rx_buf[*msg_pos])) {
+    *err = 1;
+    return ret;
+  }
+  while (isdigit(rx_buf[*msg_pos])) {
     ret = ret * 10 + (rx_buf[*msg_pos] - '0');
     (*msg_pos)++;
 
     if (*msg_pos >= rx_len) {
-      *err = 1;
+      if (!last_number) *err = 1;
       return ret;
     }
   }
@@ -35,14 +40,14 @@ void cmd_write_slot() {
   uint8_t msg_pos = 2;
   uint8_t err = 0;
   if (msg_pos >= rx_len || rx_buf[1] != ' ') err = 1;
-  saveSlot.slot_no = read_number(&msg_pos, &err);
-  saveSlot.animation = read_number(&msg_pos, &err);
-  saveSlot.seconds_scrolls = read_number(&msg_pos, &err);
-  saveSlot.text_type = read_number(&msg_pos, &err);
-  saveSlot.offset_scroll_speed = read_number(&msg_pos, &err);
-  saveSlot.scaler = read_number(&msg_pos, &err);
-  saveSlot.char_space = read_number(&msg_pos, &err);
-  if (err) {
+  saveSlot.slot_no = read_number(&msg_pos, &err, 0);
+  saveSlot.animation = read_number(&msg_pos, &err, 0);
+  saveSlot.seconds_scrolls = read_number(&msg_pos, &err, 0);
+  saveSlot.text_type = read_number(&msg_pos, &err, 0);
+  saveSlot.offset_scroll_speed = read_number(&msg_pos, &err, 0);
+  saveSlot.scaler = read_number(&msg_pos, &err, 0);
+  saveSlot.char_space = read_number(&msg_pos, &err, 0);
+  if (err || msg_pos >= rx_len) {
     uart_writeln_flash_str(
         F("W <Slot> <Animation> <Seconds/Scrolls> <Text Type> "
           "<Offset/Scroll Speed> <Scaler> <Char Space> <Text>"));
@@ -53,8 +58,8 @@ void cmd_write_slot() {
     saveSlot.text[i - msg_pos] = rx_buf[i];
   }
   saveSlot.text[rx_len - msg_pos] = 0;
-  save_slot(&saveSlot);
-  print_slot(&saveSlot);
+  slot_save(&saveSlot);
+  slot_print(&saveSlot);
   uart_enable_tx();
 }
 
@@ -62,11 +67,11 @@ void cmd_read_slot() {
   uint8_t msg_pos = 2;
   uint8_t err = 0;
   struct Slot readSlot;
-  readSlot.slot_no = read_number(&msg_pos, &err);
+  readSlot.slot_no = read_number(&msg_pos, &err, 1);
 
   if (!err) {
-    load_slot(&readSlot);
-    print_slot(&readSlot);
+    slot_load(&readSlot);
+    slot_print(&readSlot);
     uart_enable_tx();
   } else {
     uart_writeln_flash_str(F("R <Slot>"));
@@ -76,9 +81,9 @@ void cmd_read_slot() {
 void set_slot_enabled(uint8_t slot_no, uint8_t enabled) {
   struct Slot slot;
   slot.slot_no = slot_no;
-  load_slot(&slot);
+  slot_load(&slot);
   slot.enabled = enabled;
-  save_slot(&slot);
+  slot_save(&slot);
 }
 
 void cmd_disable_slot() {
@@ -134,8 +139,8 @@ void cmd_list_slots() {
   struct Slot slot;
   for (uint8_t i = 0; i < SLOT_MAX; i++) {
     slot.slot_no = i;
-    load_slot(&slot);
-    preview_slot(&slot);
+    slot_load(&slot);
+    slot_preview(&slot);
   }
   if (tx_len == 0) {
     uart_writeln_flash_str(F("No Data..."));
@@ -148,17 +153,17 @@ void cmd_set_brightness() {
   uint8_t values[4] = {0, 0, 0, 0};
 
   for (uint8_t i = 0; i < 4; i++) {
-    values[i] = read_number(&msg_pos, &err);
+    values[i] = read_number(&msg_pos, &err, i == 3);
   }
 
   if (err) {
     uart_writeln_flash_str(
         F("B <Logo Bright> <Logo Dark> <Text Bright> <Text Dark>"));
   } else {
-    display_settings.animationOnBrightness = values[0];
-    display_settings.animationOffBrightness = values[1];
-    display_settings.textOnBrightness = values[2];
-    display_settings.textOffBrightness = values[3];
+    display_state.animation_brightness_on = values[0];
+    display_state.animation_brightness_off = values[1];
+    display_state.text_brightness_on = values[2];
+    display_state.text_brightness_off = values[3];
   }
 }
 

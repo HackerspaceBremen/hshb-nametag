@@ -32,28 +32,41 @@ struct Slot {
   uint8_t scroll_counter, last_animation;
 };
 
+extern struct Slot current_slot;
+
 /**
  * Loads a Slot struct from EEPROM
  * @param slot The slot structure to be filled
  */
-void load_slot(struct Slot *slot);
+void slot_load(struct Slot *slot);
 
 /**
  * Saves a Slot struct to EEPROM
  * @param slot The slot structure
  */
-void save_slot(struct Slot *slot);
+void slot_save(struct Slot *slot);
 
 /**
  * Prints slot parameters to UART
  * @param slot The slot structure
  */
-void print_slot(struct Slot *slot);
+void slot_print(struct Slot *slot);
 
 /**
  * Previews slot parameters to UART
  * @param slot The slot structure
  */
-void preview_slot(struct Slot *slot);
+void slot_preview(struct Slot *slot);
+
+/**
+ * Draws one frame of the current slot, sets advanceSlot when it is time to
+ * advance to the next slot
+ */
+void slot_handle();
+
+/**
+ * Advances the current slot by 1
+ */
+void slot_advance();
 
 #endif

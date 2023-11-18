@@ -3,11 +3,13 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
+#include "display.h"
 #include "uart.h"
 
-extern uint8_t vRAM[522];
-
 void refreshDisplay() {
+  if (!display_state.display_on) {
+    return;
+  }
   DDRA &= 0b11110000;
   DDRB = 0;
   DDRC = 0;

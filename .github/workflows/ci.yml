@@ -23,7 +23,7 @@ jobs:
           ln -s ~/.platformio/penv/bin/pio ~/.local/bin/pio
           ln -s ~/.platformio/penv/bin/piodebuggdb ~/.local/bin/piodebuggdb
           for i in {1..33}; do
-            HSHB_BOARD=$i pio run;
+            BOARD_ID=$i pio run;
             cp .pio/build/ATmega32/firmware.hex hshb-nametag-$i.hex;
           done
         shell: bash

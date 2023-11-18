@@ -2,4 +2,4 @@
 
 import os;
 
-print(f"-Os -DBoard{os.getenv('HSHB_BOARD', '1')}")
+print(f"-Os -DBOARD_ID={os.getenv('BOARD_ID', '1')}")

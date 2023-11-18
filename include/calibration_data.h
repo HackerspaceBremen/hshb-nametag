@@ -1,7 +1,10 @@
 #include <avr/pgmspace.h>
 
-#if defined(Board1)
-#define BOARD_ID 1
+#if !defined(BOARD_ID)
+#error "BOARD_ID needs to be defined"
+#endif
+
+#if BOARD_ID == 1
 #define ADC_OFFSET -13
 #define ADC_GAIN 4808
 #define DISCHARGE_MIN_ADC 662
@@ -35,8 +38,7 @@ const int8_t chargeLUT[192] PROGMEM = {
     69, 69, 69, 70, 70, 70, 71, 71, 72, 72, 73, 74, 74, 75, 75, 76, 76, 77,
     77, 78, 78, 79, 79, 80, 81, 82, 84, 87, 91, 97};
 
-#elif defined(Board2)
-#define BOARD_ID 2
+#elif BOARD_ID == 2
 #define ADC_OFFSET -6
 #define ADC_GAIN 4977
 #define DISCHARGE_MIN_ADC 638
@@ -67,8 +69,7 @@ const int8_t chargeLUT[180] PROGMEM = {
     67, 68, 69, 70, 71, 72, 72, 72, 73, 73, 74, 74, 74, 74, 75, 75, 75, 76,
     76, 76, 77, 77, 78, 79, 80, 81, 81, 82, 82, 83, 85, 87, 89, 91, 94, 97};
 
-#elif defined(Board3)
-#define BOARD_ID 3
+#elif BOARD_ID == 3
 #define ADC_OFFSET -9
 #define ADC_GAIN 4876
 #define DISCHARGE_MIN_ADC 647
@@ -90,8 +91,7 @@ const int8_t dischargeLUT[222] PROGMEM = {
 #define CHARGE_MAX_ADC 0
 const int8_t chargeLUT[1] PROGMEM = {0};
 
-#elif defined(Board4)
-#define BOARD_ID 4
+#elif BOARD_ID == 4
 #define ADC_OFFSET -10
 #define ADC_GAIN 4837
 #define DISCHARGE_MIN_ADC 648
@@ -124,8 +124,7 @@ const int8_t chargeLUT[178] PROGMEM = {
     64, 64, 65, 66, 66, 66, 67, 67, 67, 68, 68, 69, 69, 69, 70, 70, 71, 71,
     72, 73, 74, 74, 75, 75, 76, 77, 78, 78, 79, 80, 84, 86, 92, 96};
 
-#elif defined(Board5)
-#define BOARD_ID 5
+#elif BOARD_ID == 5
 #define ADC_OFFSET -11
 #define ADC_GAIN 4896
 #define DISCHARGE_MIN_ADC 645
@@ -158,8 +157,7 @@ const int8_t chargeLUT[192] PROGMEM = {
     70, 70, 71, 71, 71, 72, 72, 72, 73, 73, 74, 75, 76, 76, 77, 77, 78, 78,
     79, 79, 80, 80, 81, 82, 82, 84, 86, 89, 93, 97};
 
-#elif defined(Board6)
-#define BOARD_ID 6
+#elif BOARD_ID == 6
 #define ADC_OFFSET -8
 #define ADC_GAIN 4799
 #define DISCHARGE_MIN_ADC 658
@@ -192,8 +190,7 @@ const int8_t chargeLUT[191] PROGMEM = {
     73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 76, 77, 78, 78, 79, 80, 80, 81,
     81, 82, 83, 83, 84, 85, 85, 87, 91, 93, 97};
 
-#elif defined(Board7)
-#define BOARD_ID 7
+#elif BOARD_ID == 7
 #define ADC_OFFSET -11
 #define ADC_GAIN 4977
 #define DISCHARGE_MIN_ADC 629
@@ -226,8 +223,7 @@ const int8_t chargeLUT[192] PROGMEM = {
     76, 76, 77, 77, 77, 78, 78, 78, 79, 79, 79, 80, 80, 81, 82, 83, 84, 84,
     85, 85, 86, 87, 88, 88, 89, 91, 92, 95, 97, 99};
 
-#elif defined(Board8)
-#define BOARD_ID 8
+#elif BOARD_ID == 8
 #define ADC_OFFSET -6
 #define ADC_GAIN 5040
 #define DISCHARGE_MIN_ADC 626
@@ -259,8 +255,7 @@ const int8_t chargeLUT[182] PROGMEM = {
     70, 71, 71, 71, 72, 72, 72, 73, 73, 74, 75, 75, 76, 77, 77, 78, 78, 79, 80,
     80, 81, 81, 82, 83, 83, 85, 86, 89, 92, 97};
 
-#elif defined(Board9)
-#define BOARD_ID 9
+#elif BOARD_ID == 9
 #define ADC_OFFSET -5
 #define ADC_GAIN 5019
 #define DISCHARGE_MIN_ADC 625
@@ -282,8 +277,7 @@ const int8_t dischargeLUT[218] PROGMEM = {
 #define CHARGE_MAX_ADC 0
 const int8_t chargeLUT[1] PROGMEM = {0};
 
-#elif defined(Board10)
-#define BOARD_ID 10
+#elif BOARD_ID == 10
 #define ADC_OFFSET -5
 #define ADC_GAIN 4957
 #define DISCHARGE_MIN_ADC 631
@@ -315,8 +309,7 @@ const int8_t chargeLUT[172] PROGMEM = {
     77, 77, 78, 78, 78, 79, 79, 79, 80, 80, 80, 81, 81, 82, 83, 83, 84, 85,
     85, 86, 87, 87, 88, 89, 92, 93, 96, 99};
 
-#elif defined(Board11)
-#define BOARD_ID 11
+#elif BOARD_ID == 11
 #define ADC_OFFSET -7
 #define ADC_GAIN 4926
 #define DISCHARGE_MIN_ADC 639
@@ -348,8 +341,7 @@ const int8_t chargeLUT[185] PROGMEM = {
     70, 70, 71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 77, 78,
     79, 79, 80, 81, 81, 82, 83, 83, 84, 86, 88, 91, 95, 99};
 
-#elif defined(Board12)
-#define BOARD_ID 12
+#elif BOARD_ID == 12
 #define ADC_OFFSET -13
 #define ADC_GAIN 5029
 #define DISCHARGE_MIN_ADC 634
@@ -382,8 +374,7 @@ const int8_t chargeLUT[193] PROGMEM = {
     74, 74, 75, 75, 76, 77, 78, 78, 79, 80, 80, 81, 81, 82, 82, 83, 83, 84,
     84, 85, 85, 86, 86, 87, 88, 89, 90, 92, 95, 97, 99};
 
-#elif defined(Board13)
-#define BOARD_ID 13
+#elif BOARD_ID == 13
 #define ADC_OFFSET -12
 #define ADC_GAIN 4847
 #define DISCHARGE_MIN_ADC 651
@@ -417,8 +408,7 @@ const int8_t chargeLUT[191] PROGMEM = {
     71, 71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 74, 75, 76, 77, 77, 78, 79,
     79, 80, 80, 81, 82, 82, 83, 84, 86, 91, 97};
 
-#elif defined(Board14)
-#define BOARD_ID 14
+#elif BOARD_ID == 14
 #define ADC_OFFSET -11
 #define ADC_GAIN 4847
 #define DISCHARGE_MIN_ADC 650
@@ -450,8 +440,7 @@ const int8_t chargeLUT[179] PROGMEM = {
     69, 69, 70, 71, 72, 73, 74, 74, 75, 75, 76, 76, 77, 77, 78, 78, 78, 79,
     79, 79, 80, 80, 80, 81, 81, 82, 83, 84, 85, 86, 87, 88, 91, 93, 97};
 
-#elif defined(Board15)
-#define BOARD_ID 15
+#elif BOARD_ID == 15
 #define ADC_OFFSET -11
 #define ADC_GAIN 4780
 #define DISCHARGE_MIN_ADC 666
@@ -483,8 +472,7 @@ const int8_t chargeLUT[189] PROGMEM = {
     72, 73, 74, 75, 75, 75, 76, 76, 77, 77, 77, 78, 78, 78, 79, 79, 79, 80, 80,
     80, 81, 82, 83, 84, 84, 85, 85, 86, 86, 87, 88, 89, 93, 90, 92, 95, 98};
 
-#elif defined(Board16)
-#define BOARD_ID 16
+#elif BOARD_ID == 16
 #define ADC_OFFSET -9
 #define ADC_GAIN 4723
 #define DISCHARGE_MIN_ADC 669
@@ -516,8 +504,7 @@ const int8_t chargeLUT[186] PROGMEM = {
     71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 76, 76, 76, 77,
     78, 79, 80, 80, 81, 81, 82, 82, 83, 84, 85, 86, 89, 91, 96};
 
-#elif defined(Board17)
-#define BOARD_ID 17
+#elif BOARD_ID == 17
 #define ADC_OFFSET -7
 #define ADC_GAIN 4896
 #define DISCHARGE_MIN_ADC 639
@@ -550,8 +537,7 @@ const int8_t chargeLUT[184] PROGMEM = {
     73, 73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 76, 76, 77, 78, 79, 80, 80, 81,
     81, 82, 82, 83, 84, 84, 85, 86, 88, 90, 93, 95, 98};
 
-#elif defined(Board18)
-#define BOARD_ID 18
+#elif BOARD_ID == 18
 #define ADC_OFFSET -12
 #define ADC_GAIN 4886
 #define DISCHARGE_MIN_ADC 644
@@ -583,8 +569,7 @@ const int8_t chargeLUT[178] PROGMEM = {
     67, 68, 70, 70, 71, 72, 72, 73, 73, 74, 74, 74, 75, 75, 75, 75, 76, 76,
     77, 77, 77, 78, 78, 79, 80, 81, 82, 83, 84, 85, 89, 90, 93, 97};
 
-#elif defined(Board19)
-#define BOARD_ID 19
+#elif BOARD_ID == 19
 #define ADC_OFFSET -11
 #define ADC_GAIN 4798
 #define DISCHARGE_MIN_ADC 655
@@ -617,8 +602,7 @@ const int8_t chargeLUT[187] PROGMEM = {
     72, 73, 73, 73, 74, 74, 75, 75, 75, 76, 76, 76, 76, 77, 77, 77, 78, 78, 79,
     80, 81, 82, 82, 83, 83, 84, 84, 85, 86, 87, 88, 91, 90, 93, 97};
 
-#elif defined(Board20)
-#define BOARD_ID 20
+#elif BOARD_ID == 20
 #define ADC_OFFSET -9
 #define ADC_GAIN 4957
 #define DISCHARGE_MIN_ADC 629
@@ -650,8 +634,7 @@ const int8_t chargeLUT[180] PROGMEM = {
     66, 67, 68, 68, 69, 69, 70, 70, 71, 71, 71, 72, 72, 72, 73, 73, 73, 74,
     74, 74, 75, 76, 77, 77, 78, 78, 79, 80, 80, 81, 82, 83, 85, 87, 92, 97};
 
-#elif defined(Board21)
-#define BOARD_ID 21
+#elif BOARD_ID == 21
 #define ADC_OFFSET -13
 #define ADC_GAIN 4838
 #define DISCHARGE_MIN_ADC 654
@@ -683,8 +666,7 @@ const int8_t chargeLUT[186] PROGMEM = {
     70, 71, 71, 72, 72, 73, 73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 76, 77, 77,
     78, 79, 80, 80, 81, 81, 82, 83, 83, 84, 85, 85, 89, 92, 97};
 
-#elif defined(Board22)
-#define BOARD_ID 22
+#elif BOARD_ID == 22
 #define ADC_OFFSET -11
 #define ADC_GAIN 4947
 #define DISCHARGE_MIN_ADC 636
@@ -717,8 +699,7 @@ const int8_t chargeLUT[185] PROGMEM = {
     71, 72, 72, 72, 73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 76, 77, 78, 79, 79,
     80, 80, 81, 82, 82, 83, 83, 84, 85, 85, 86, 88, 91, 96};
 
-#elif defined(Board23)
-#define BOARD_ID 23
+#elif BOARD_ID == 23
 #define ADC_OFFSET -10
 #define ADC_GAIN 4897
 #define DISCHARGE_MIN_ADC 653
@@ -750,8 +731,7 @@ const int8_t chargeLUT[184] PROGMEM = {
     71, 71, 72, 72, 73, 73, 73, 73, 74, 74, 75, 75, 75, 76, 76, 77, 78, 79, 79,
     80, 80, 81, 81, 82, 83, 83, 84, 85, 87, 90, 93, 97};
 
-#elif defined(Board24)
-#define BOARD_ID 24
+#elif BOARD_ID == 24
 #define ADC_OFFSET -11
 #define ADC_GAIN 4877
 #define DISCHARGE_MIN_ADC 654
@@ -784,8 +764,7 @@ const int8_t chargeLUT[194] PROGMEM = {
     72, 72, 72, 73, 73, 74, 75, 76, 76, 77, 77, 78, 79, 79, 79, 80, 80, 81,
     82, 82, 82, 83, 83, 84, 85, 85, 86, 87, 87, 90, 93, 97};
 
-#elif defined(Board25)
-#define BOARD_ID 25
+#elif BOARD_ID == 25
 #define ADC_OFFSET -9
 #define ADC_GAIN 4857
 #define DISCHARGE_MIN_ADC 654
@@ -817,8 +796,7 @@ const int8_t chargeLUT[189] PROGMEM = {
     71, 72, 73, 73, 74, 74, 74, 75, 75, 76, 76, 76, 76, 77, 77, 77, 78, 78, 79,
     80, 80, 81, 82, 82, 83, 84, 84, 85, 85, 86, 87, 88, 89, 91, 93, 97, 99};
 
-#elif defined(Board26)
-#define BOARD_ID 26
+#elif BOARD_ID == 26
 #define ADC_OFFSET -11
 #define ADC_GAIN 4847
 #define DISCHARGE_MIN_ADC 658
@@ -851,8 +829,7 @@ const int8_t chargeLUT[193] PROGMEM = {
     74, 74, 74, 75, 75, 75, 76, 76, 77, 77, 78, 79, 80, 80, 81, 81, 82, 82,
     83, 84, 84, 85, 85, 86, 87, 87, 89, 92, 93, 96, 99};
 
-#elif defined(Board27)
-#define BOARD_ID 27
+#elif BOARD_ID == 27
 #define ADC_OFFSET -13
 #define ADC_GAIN 4874
 #define DISCHARGE_MIN_ADC 647
@@ -886,8 +863,7 @@ const int8_t chargeLUT[192] PROGMEM = {
     73, 74, 74, 74, 75, 75, 76, 77, 78, 78, 79, 79, 80, 80, 81, 81, 82, 82,
     83, 83, 84, 85, 85, 86, 87, 88, 89, 93, 95, 98};
 
-#elif defined(Board28)
-#define BOARD_ID 28
+#elif BOARD_ID == 28
 #define ADC_OFFSET -13
 #define ADC_GAIN 4857
 #define DISCHARGE_MIN_ADC 656
@@ -920,8 +896,7 @@ const int8_t chargeLUT[194] PROGMEM = {
     74, 75, 75, 75, 75, 76, 76, 77, 77, 78, 79, 80, 80, 81, 82, 82, 83, 83,
     84, 84, 85, 85, 86, 86, 87, 88, 88, 89, 92, 92, 96, 99};
 
-#elif defined(Board29)
-#define BOARD_ID 29
+#elif BOARD_ID == 29
 #define ADC_OFFSET -9
 #define ADC_GAIN 4916
 #define DISCHARGE_MIN_ADC 647
@@ -953,8 +928,7 @@ const int8_t chargeLUT[190] PROGMEM = {
     71, 71, 72, 72, 73, 73, 73, 74, 74, 74, 75, 75, 75, 76, 76, 76, 77, 78, 78,
     79, 80, 81, 81, 82, 82, 83, 84, 84, 85, 86, 86, 87, 88, 88, 90, 93, 96, 98};
 
-#elif defined(Board30)
-#define BOARD_ID 30
+#elif BOARD_ID == 30
 #define ADC_OFFSET -7
 #define ADC_GAIN 4978
 #define DISCHARGE_MIN_ADC 636
@@ -986,8 +960,7 @@ const int8_t chargeLUT[179] PROGMEM = {
     65, 66, 67, 68, 68, 69, 69, 70, 70, 71, 71, 71, 71, 72, 72, 72, 73, 73,
     74, 74, 75, 76, 77, 77, 78, 79, 79, 80, 81, 82, 83, 84, 87, 91, 97};
 
-#elif defined(Board31)
-#define BOARD_ID 31
+#elif BOARD_ID == 31
 #define ADC_OFFSET -4
 #define ADC_GAIN 4897
 #define DISCHARGE_MIN_ADC 640
@@ -1019,8 +992,7 @@ const int8_t chargeLUT[186] PROGMEM = {
     69, 70, 70, 70, 71, 71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 75, 76, 77, 77,
     78, 78, 79, 80, 80, 81, 82, 82, 83, 84, 84, 86, 89, 93, 97};
 
-#elif defined(Board32)
-#define BOARD_ID 32
+#elif BOARD_ID == 32
 #define ADC_OFFSET -10
 #define ADC_GAIN 4837
 #define DISCHARGE_MIN_ADC 650
@@ -1053,8 +1025,7 @@ const int8_t chargeLUT[185] PROGMEM = {
     69, 69, 70, 70, 71, 71, 71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 75, 76, 77,
     77, 78, 78, 79, 79, 80, 80, 81, 82, 83, 84, 85, 89, 95};
 
-#elif defined(Board33)
-#define BOARD_ID 33
+#elif BOARD_ID == 33
 #define ADC_OFFSET -4
 #define ADC_GAIN 4998
 #define DISCHARGE_MIN_ADC 621
@@ -1086,4 +1057,6 @@ const int8_t chargeLUT[180] PROGMEM = {
     68, 68, 69, 70, 70, 71, 71, 72, 72, 72, 73, 73, 73, 74, 74, 74, 75, 75,
     76, 76, 77, 78, 79, 79, 80, 80, 81, 82, 82, 83, 84, 85, 86, 89, 93, 97};
 
+#else
+#error "Invalid BOARD_ID"
 #endif

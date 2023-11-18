@@ -3,12 +3,10 @@
 #include <avr/interrupt.h>
 
 #include "calibration_data.h"
+#include "charge.h"
 
 volatile struct ADCValues adc_values = {
     .ADCvalue = 0,
-    .charging = 0,
-    .chargeOn = 0,
-    .lastCharge = 0,
 };
 
 void adc_init() {
@@ -38,7 +36,7 @@ ISR(ADC_vect) {
   adc_values.voltage =
       (uint32_t)(adc_values.ADCvalue + ADC_OFFSET) * ADC_GAIN / 1000;
 
-  if (adc_values.charging) {
+  if (charge_data.charging) {
     if (adc_values.ADCvalue < CHARGE_MIN_ADC) {
       // percent = pgm_read_byte(&chargeLUT[0]);
       adc_values.percent = 0;

@@ -21,6 +21,8 @@ volatile struct ButtonState button_state = {
 };
 
 void button_update() {
+  // != 0 because .button is actually a single bit, and writing 1<<2 (4) into it
+  // results in always writing 0
   button_state.button = (PIND & (1 << 2)) != 0;
   if (button_state.button != button_state.last_button) {
     if (!button_state.button) button_state.button_press_millis = global_millis;

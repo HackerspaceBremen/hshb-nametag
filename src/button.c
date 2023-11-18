@@ -124,7 +124,7 @@ void button_check() {
     enter_deepsleep();
   } else if (!button_state.button && button_state.new_button_event &&
              button_press_duration > BUTTON_MEDIUM_PRESS_TIME) {
-    fillLogoPercent(adc_values.percent, 19, 32, 1);
+    logo_fill_percent(adc_values.percent, 19, 32, 1);
     snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
              "Battery %d%%", adc_values.percent);
     display_write_text(0, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);

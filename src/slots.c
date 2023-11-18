@@ -146,7 +146,7 @@ void slot_advance() {
   } else {
     if (current_slot.animation != current_slot.last_animation) {
       clear_vram();
-      resetAnimations();
+      animations_reset();
     }
     current_slot.last_animation = current_slot.animation;
   }
@@ -161,28 +161,28 @@ void slot_handle() {
           vRAM[k] = display_state.animation_brightness_on;
         break;
       case MATRIX:
-        matrixAnimation();
+        animation_matrix();
         break;
       case SWEEP:
-        sweepAnimation(32, 1);
+        animation_sweep(32, 1);
         break;
       case WAVE:
-        waveAnimation();
+        animation_wave();
         break;
       case LINES:
-        linesAnimation(0);
+        animation_line(0);
         break;
       case LINES_FILLED:
-        linesAnimation(1);
+        animation_line(1);
         break;
       case ROTATE:
-        rotateAnimation(0);
+        animation_rotate(0);
         break;
       case ROTATE_FILLED:
-        rotateAnimation(1);
+        animation_rotate(1);
         break;
       case CIRCLES:
-        circlesAnimation();
+        animation_circles();
         break;
       default:  // Includes LOGO_OFF
         for (uint16_t k = LOGO_START; k < LOGO_END; k++)

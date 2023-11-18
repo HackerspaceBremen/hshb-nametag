@@ -4,7 +4,7 @@
 
 extern uint8_t vRAM[522];
 
-void fillLogoPercent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
+void logo_fill_percent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
   uint8_t leds = (perc * full + 50) / 100;
   if (perc < 0) {
     leds = 0;
@@ -13,15 +13,15 @@ void fillLogoPercent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
   }
   for (uint8_t i = 0; i <= 18; i++) {
     if (i < leds) {
-      logoDrawLine(0, 18 - i, 14, 18 - i, onB);
+      logo_draw_line(0, 18 - i, 14, 18 - i, onB);
     } else {
-      logoDrawLine(0, 18 - i, 14, 18 - i, offB);
+      logo_draw_line(0, 18 - i, 14, 18 - i, offB);
     }
   }
 }
 
-void logoDrawLine(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
-                  uint8_t brightness) {
+void logo_draw_line(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
+                    uint8_t brightness) {
   int8_t dx = x2 - x1;
   int8_t dy = y2 - y1;
   if (dx < 0) dx *= -1;
@@ -30,7 +30,7 @@ void logoDrawLine(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
   int8_t sy = y1 < y2 ? 1 : -1;
   int8_t err = dx - dy;
   while (x1 != x2 || y1 != y2) {
-    setLogoXY(x1, y1, brightness);
+    logo_set_xy(x1, y1, brightness);
     int8_t e2 = 2 * err;
     if (e2 > -dy) {
       err -= dy;
@@ -41,22 +41,22 @@ void logoDrawLine(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
       y1 += sy;
     }
   }
-  setLogoXY(x2, y2, brightness);
+  logo_set_xy(x2, y2, brightness);
 }
 
-void logoDrawCircle(int8_t x, int8_t y, int8_t r, uint8_t brightness) {
+void logo_draw_circle(int8_t x, int8_t y, int8_t r, uint8_t brightness) {
   int8_t x1 = 0;
   int8_t y1 = r;
   int8_t d = 3 - 2 * r;
   while (x1 <= y1) {
-    setLogoXY(x + x1, y + y1, brightness);
-    setLogoXY(x + x1, y - y1, brightness);
-    setLogoXY(x - x1, y + y1, brightness);
-    setLogoXY(x - x1, y - y1, brightness);
-    setLogoXY(x + y1, y + x1, brightness);
-    setLogoXY(x + y1, y - x1, brightness);
-    setLogoXY(x - y1, y + x1, brightness);
-    setLogoXY(x - y1, y - x1, brightness);
+    logo_set_xy(x + x1, y + y1, brightness);
+    logo_set_xy(x + x1, y - y1, brightness);
+    logo_set_xy(x - x1, y + y1, brightness);
+    logo_set_xy(x - x1, y - y1, brightness);
+    logo_set_xy(x + y1, y + x1, brightness);
+    logo_set_xy(x + y1, y - x1, brightness);
+    logo_set_xy(x - y1, y + x1, brightness);
+    logo_set_xy(x - y1, y - x1, brightness);
     x1++;
     if (d < 0) {
       d += 4 * x1 + 6;
@@ -67,7 +67,7 @@ void logoDrawCircle(int8_t x, int8_t y, int8_t r, uint8_t brightness) {
   }
 }
 
-void setLogoXY(uint8_t x, uint8_t y, uint8_t brightness) {
+void logo_set_xy(uint8_t x, uint8_t y, uint8_t brightness) {
   if (x > 14 || y > 18) return;
 
   uint16_t pix = x + y * 15;

@@ -19,13 +19,13 @@ enum ANIMATIONS {
   INVALID_ANIMATION,
 };
 
-void resetAnimations();
+void animations_reset();
 
-uint8_t linesAnimation(uint8_t fill);
-uint8_t rotateAnimation(uint8_t fill);
-uint8_t circlesAnimation();
-void matrixAnimation();
-void sweepAnimation();
-void waveAnimation();
+void animation_line(uint8_t fill);
+void animation_rotate(uint8_t fill);
+void animation_circles();
+void animation_matrix();
+void animation_sweep();
+void animation_wave();
 
 #endif

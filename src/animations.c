@@ -19,7 +19,7 @@ const uint8_t bArray[] PROGMEM = {
     63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
 uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
 
-void resetAnimations() {
+void animations_reset() {
   i = 0;
   j = 0;
   step = 0;
@@ -29,7 +29,7 @@ void resetAnimations() {
   counter2 = 0;
 }
 
-uint8_t linesAnimation(uint8_t fill) {
+void animation_line(uint8_t fill) {
   uint8_t on = display_state.animation_brightness_on;
   uint8_t off = display_state.animation_brightness_off;
   if (counter0 < 1) {
@@ -40,7 +40,7 @@ uint8_t linesAnimation(uint8_t fill) {
       if (!fill) {
         clear_vram_logo();
       }
-      logoDrawLine(i, 0, i, 18, on);
+      logo_draw_line(i, 0, i, 18, on);
       i++;
       if (i >= 15) {
         i = 0;
@@ -48,10 +48,10 @@ uint8_t linesAnimation(uint8_t fill) {
       }
     } else if (step == 1) {
       if (fill) {
-        logoDrawLine(0, i, 14, i, off);
+        logo_draw_line(0, i, 14, i, off);
       } else {
         clear_vram_logo();
-        logoDrawLine(0, i, 14, i, on);
+        logo_draw_line(0, i, 14, i, on);
       }
       i++;
       if (i >= 19) {
@@ -62,7 +62,7 @@ uint8_t linesAnimation(uint8_t fill) {
       if (!fill) {
         clear_vram_logo();
       }
-      logoDrawLine(14 - i, 0, 14 - i, 18, on);
+      logo_draw_line(14 - i, 0, 14 - i, 18, on);
       i++;
       if (i >= 15) {
         i = 0;
@@ -70,35 +70,34 @@ uint8_t linesAnimation(uint8_t fill) {
       }
     } else if (step == 3) {
       if (fill) {
-        logoDrawLine(0, 18 - i, 14, 18 - i, off);
+        logo_draw_line(0, 18 - i, 14, 18 - i, off);
       } else {
         clear_vram_logo();
-        logoDrawLine(0, 18 - i, 14, 18 - i, on);
+        logo_draw_line(0, 18 - i, 14, 18 - i, on);
       }
       i++;
       if (i >= 19) {
         i = 0;
         step = 0;
-        return 0;
+        return;
       }
     }
   }
-  return 1;
 }
 
-uint8_t rotateAnimation(uint8_t fill) {
+void animation_rotate(uint8_t fill) {
   uint8_t on = display_state.animation_brightness_on;
   uint8_t off = display_state.animation_brightness_off;
   if (quarter % 2 == 0) {
     if (fill) {
       if (quarter == 0) {
-        logoDrawLine(i, 0, 14 - i, 18, on);
+        logo_draw_line(i, 0, 14 - i, 18, on);
       } else {
-        logoDrawLine(i, 0, 14 - i, 18, off);
+        logo_draw_line(i, 0, 14 - i, 18, off);
       }
     } else {
       clear_vram_logo();
-      logoDrawLine(i, 0, 14 - i, 18, on);
+      logo_draw_line(i, 0, 14 - i, 18, on);
     }
     i++;
     if (i >= 15) {
@@ -108,13 +107,13 @@ uint8_t rotateAnimation(uint8_t fill) {
   } else {
     if (fill) {
       if (quarter == 1) {
-        logoDrawLine(0, 18 - i, 14, i, on);
+        logo_draw_line(0, 18 - i, 14, i, on);
       } else {
-        logoDrawLine(0, 18 - i, 14, i, off);
+        logo_draw_line(0, 18 - i, 14, i, off);
       }
     } else {
       clear_vram_logo();
-      logoDrawLine(0, 18 - i, 14, i, on);
+      logo_draw_line(0, 18 - i, 14, i, on);
     }
     i++;
     if (i >= 19) {
@@ -124,20 +123,19 @@ uint8_t rotateAnimation(uint8_t fill) {
   }
   if (quarter >= 4) {
     quarter = 0;
-    return 0;
   }
-  return 1;
 }
 
-uint8_t circlesAnimation() {
+void animation_circles() {
   if (counter0 < 2) {
     counter0++;
   } else {
     counter0 = 0;
     for (uint16_t k = LOGO_START; k < LOGO_END; k++)
       vRAM[k] = display_state.animation_brightness_off;
-    logoDrawCircle(pgm_read_byte(&circleXPos[i]), pgm_read_byte(&circleYPos[i]),
-                   j, display_state.animation_brightness_on);
+    logo_draw_circle(pgm_read_byte(&circleXPos[i]),
+                     pgm_read_byte(&circleYPos[i]), j,
+                     display_state.animation_brightness_on);
 
     j++;
     if (j >= 25) {
@@ -145,26 +143,24 @@ uint8_t circlesAnimation() {
       i++;
       if (i >= 5) {
         i = 0;
-        return 0;
       }
     }
   }
-  return 1;
 }
 
-void matrixAnimation() {
+void animation_matrix() {
   if (counter0 > 6) {
     counter0 = 0;
 
     for (uint8_t i = 0; i < 5; i++) {
       uint8_t t = i * 3;
-      setLogoXY(t, logoLines[t], 255);
-      setLogoXY(t, logoLines[t] - 1, 128);
-      setLogoXY(t, logoLines[t] - 2, 64);
-      setLogoXY(t, logoLines[t] - 3, 32);
-      setLogoXY(t, logoLines[t] - 4, 16);
-      setLogoXY(t, logoLines[t] - 5, 8);
-      setLogoXY(t, logoLines[t] - 6, 0);
+      logo_set_xy(t, logoLines[t], 255);
+      logo_set_xy(t, logoLines[t] - 1, 128);
+      logo_set_xy(t, logoLines[t] - 2, 64);
+      logo_set_xy(t, logoLines[t] - 3, 32);
+      logo_set_xy(t, logoLines[t] - 4, 16);
+      logo_set_xy(t, logoLines[t] - 5, 8);
+      logo_set_xy(t, logoLines[t] - 6, 0);
       logoLines[t]++;
       if (logoLines[t] >= 25) logoLines[t] = 0;
     }
@@ -175,13 +171,13 @@ void matrixAnimation() {
 
     for (uint8_t i = 0; i < 5; i++) {
       uint8_t t = i * 3 + 1;
-      setLogoXY(t, logoLines[t], 255);
-      setLogoXY(t, logoLines[t] - 1, 128);
-      setLogoXY(t, logoLines[t] - 2, 64);
-      setLogoXY(t, logoLines[t] - 3, 32);
-      setLogoXY(t, logoLines[t] - 4, 16);
-      setLogoXY(t, logoLines[t] - 5, 8);
-      setLogoXY(t, logoLines[t] - 6, 0);
+      logo_set_xy(t, logoLines[t], 255);
+      logo_set_xy(t, logoLines[t] - 1, 128);
+      logo_set_xy(t, logoLines[t] - 2, 64);
+      logo_set_xy(t, logoLines[t] - 3, 32);
+      logo_set_xy(t, logoLines[t] - 4, 16);
+      logo_set_xy(t, logoLines[t] - 5, 8);
+      logo_set_xy(t, logoLines[t] - 6, 0);
       logoLines[t]++;
       if (logoLines[t] >= 25) logoLines[t] = 0;
     }
@@ -192,13 +188,13 @@ void matrixAnimation() {
 
     for (uint8_t i = 0; i < 5; i++) {
       uint8_t t = i * 3 + 2;
-      setLogoXY(t, logoLines[t], 255);
-      setLogoXY(t, logoLines[t] - 1, 128);
-      setLogoXY(t, logoLines[t] - 2, 64);
-      setLogoXY(t, logoLines[t] - 3, 32);
-      setLogoXY(t, logoLines[t] - 4, 16);
-      setLogoXY(t, logoLines[t] - 5, 8);
-      setLogoXY(t, logoLines[t] - 6, 0);
+      logo_set_xy(t, logoLines[t], 255);
+      logo_set_xy(t, logoLines[t] - 1, 128);
+      logo_set_xy(t, logoLines[t] - 2, 64);
+      logo_set_xy(t, logoLines[t] - 3, 32);
+      logo_set_xy(t, logoLines[t] - 4, 16);
+      logo_set_xy(t, logoLines[t] - 5, 8);
+      logo_set_xy(t, logoLines[t] - 6, 0);
       logoLines[t]++;
       if (logoLines[t] >= 25) logoLines[t] = 0;
     }
@@ -209,7 +205,7 @@ void matrixAnimation() {
   counter2++;
 }
 
-void sweepAnimation() {
+void animation_sweep() {
   uint8_t on = display_state.animation_brightness_on;
   uint8_t off = display_state.animation_brightness_off;
   j--;
@@ -222,22 +218,22 @@ void sweepAnimation() {
     for (int y = 0; y < 19; y++) {
       if (j > y) {
         if (i == 1) {
-          setLogoXY(x, y, off);
+          logo_set_xy(x, y, off);
         } else {
-          setLogoXY(x, y, on);
+          logo_set_xy(x, y, on);
         }
       } else {
         if (i == 1) {
-          setLogoXY(x, y, off);
+          logo_set_xy(x, y, off);
         } else {
-          setLogoXY(x, y, on);
+          logo_set_xy(x, y, on);
         }
       }
     }
   }
 }
 
-void waveAnimation() {
+void animation_wave() {
   if (counter0 < 1) {
     counter0++;
   } else {
@@ -245,7 +241,7 @@ void waveAnimation() {
 
     i = j;
     for (uint8_t k = 0; k <= 18; k++) {
-      logoDrawLine(0, k, 14, k, pgm_read_byte(&bArray[i]) + 10);
+      logo_draw_line(0, k, 14, k, pgm_read_byte(&bArray[i]) + 10);
       i++;
       if (i >= 35) i = 0;
     }

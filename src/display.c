@@ -808,7 +808,7 @@ void display_fade_text(const char* text, uint8_t fade_out) {
     snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, text);
   clear_vram();
   display_state.display_on = 1;
-  resetAnimations();
+  animations_reset();
 
   if (fade_out) {
     for (uint8_t i = 64; i > 0; i--) {

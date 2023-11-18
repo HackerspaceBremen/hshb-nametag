@@ -67,8 +67,8 @@ int main(void) {
     }
 
     handle_command_input();
-    handle_state();
-    battery_check();
+    charge_handle_state();
+    charge_battery_check();
   }
   return 0;
 }

@@ -17,8 +17,8 @@ struct ChargeData {
 extern volatile struct ChargeData charge_data;
 
 void charge_display_state();
-void battery_check();
-void handle_state();
+void charge_battery_check();
+void charge_handle_state();
 void deep_sleep();
 
 #endif

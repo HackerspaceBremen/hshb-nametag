@@ -21,10 +21,10 @@ volatile struct ChargeData charge_data = {
 };
 
 void charge_display_state() {
-  fillLogoPercent(adc_values.percent, 19, 32, 1);
+  logo_fill_percent(adc_values.percent, 19, 32, 1);
   if (charge_data.charging) {
     if (!(PINA & (1 << 7))) {
-      logoDrawLine(0, 0, 14, 0, 32);
+      logo_draw_line(0, 0, 14, 0, 32);
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
                "Battery Full");
       display_write_text(0, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);
@@ -40,14 +40,14 @@ void charge_display_state() {
   }
 }
 
-void battery_check() {
+void charge_battery_check() {
   static uint32_t lastBatCheck = 0;
   if ((uint32_t)(global_millis - lastBatCheck) >= 1000) {
     lastBatCheck = global_millis;
     if (!charge_data.charging && adc_values.voltage <= 3500) {
       charge_data.charge_on = 0;
       charge_data.low_battery = 1;
-      resetAnimations();
+      animations_reset();
       clear_vram();
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
                "Low Battery");
@@ -58,7 +58,7 @@ void battery_check() {
   }
 }
 
-void handle_state() {
+void charge_handle_state() {
   if (!CHARGING_PIN_HIGH) {
     if (!charge_data.charging) {
       charge_data.charging = 1;
@@ -79,7 +79,7 @@ void handle_state() {
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
                "Shutdown");
       clear_vram();
-      resetAnimations();
+      animations_reset();
       for (uint8_t i = 64; i > 0; i--) {
         display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 2, i, 0);
         _delay_ms(20);

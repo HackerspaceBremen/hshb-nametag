@@ -8,7 +8,6 @@
 
 extern volatile char tx_buf[TX_BUFFER_SIZE];
 extern volatile uint8_t tx_len;
-extern volatile uint8_t tx_pos;
 extern volatile char rx_buf[RX_BUFFER_SIZE];
 extern volatile uint8_t rx_len;
 
@@ -21,6 +20,5 @@ void uart_disable();
 void uart_handle_rx();
 uint8_t uart_writeln_flash_str(const char *flashStr);
 void uart_enable_tx();
-void uart_disable_tx();
 
 #endif

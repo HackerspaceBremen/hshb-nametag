@@ -667,7 +667,7 @@ const uint8_t specialCharset[][5] PROGMEM = {
 };
 // clang-format on
 
-uint8_t specialChar(uint8_t c, uint8_t l) {
+static uint8_t specialChar(uint8_t c, uint8_t l) {
   switch (c) {
     case 196:
       return pgm_read_byte(&specialCharset[0][l]);

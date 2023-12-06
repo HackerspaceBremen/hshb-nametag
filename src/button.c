@@ -31,18 +31,18 @@ void button_update() {
   button_state.last_button = button_state.button;
 }
 
-void on_low_battery() {
+static void on_low_battery() {
   display_fade_text("Low Battery", 0);
   display_state.display_on = 0;  // Disable Display
 }
 
-void wake_up_routine() {
+static void wake_up_routine() {
   snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, "Start %03d",
            BOARD_ID);
   display_fade_text("", 0);
 }
 
-void enter_deepsleep() {
+static void enter_deepsleep() {
   // Waits for the button to be released and then enters depsleep
   display_state.display_on = 0;  // Disable Display
   while (!button_state.button) button_update();

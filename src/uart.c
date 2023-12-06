@@ -10,7 +10,7 @@
 #define UBRR_VAL ((F_CPU / (16UL * BAUD)) - 1)
 
 volatile uint8_t tx_len = 0;
-volatile uint8_t tx_pos = 0;
+static volatile uint8_t tx_pos = 0;
 volatile uint8_t rx_len = 0;
 volatile char tx_buf[TX_BUFFER_SIZE];
 volatile char rx_buf[RX_BUFFER_SIZE];
@@ -75,7 +75,7 @@ void uart_enable_tx() {
   UCSRB |= (1 << UDRIE);  // Enable UART TX interrupt
 }
 
-void uart_disable_tx() {
+static void uart_disable_tx() {
   tx_pos = 0;
   UCSRB &= ~(1 << UDRIE);  // Disable UART TX interrupt
 }

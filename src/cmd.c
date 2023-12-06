@@ -19,7 +19,8 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-uint8_t read_number(uint8_t *msg_pos, uint8_t *err, uint8_t last_number) {
+static uint8_t read_number(uint8_t *msg_pos, uint8_t *err,
+                           uint8_t last_number) {
   uint8_t ret = 0;
   if (!isdigit(rx_buf[*msg_pos])) {
     *err = 1;
@@ -38,7 +39,7 @@ uint8_t read_number(uint8_t *msg_pos, uint8_t *err, uint8_t last_number) {
   return ret;
 }
 
-void cmd_write_slot() {
+static void cmd_write_slot() {
   struct Slot saveSlot;
   saveSlot.enabled = 1;
   uint8_t msg_pos = 2;
@@ -67,7 +68,7 @@ void cmd_write_slot() {
   uart_enable_tx();
 }
 
-void cmd_read_slot() {
+static void cmd_read_slot() {
   uint8_t msg_pos = 2;
   uint8_t err = 0;
   struct Slot readSlot;
@@ -82,7 +83,7 @@ void cmd_read_slot() {
   }
 }
 
-void set_slot_enabled(uint8_t slot_no, uint8_t enabled) {
+static void set_slot_enabled(uint8_t slot_no, uint8_t enabled) {
   struct Slot slot;
   slot.slot_no = slot_no;
   slot_load(&slot);
@@ -90,7 +91,7 @@ void set_slot_enabled(uint8_t slot_no, uint8_t enabled) {
   slot_save(&slot);
 }
 
-void cmd_disable_slot() {
+static void cmd_disable_slot() {
   if (rx_len == 3 && rx_buf[1] == ' ' && rx_buf[2] >= '0' && rx_buf[2] <= '9') {
     uint8_t slot_no = (rx_buf[2] - '0');
     set_slot_enabled(slot_no, 0);
@@ -102,7 +103,7 @@ void cmd_disable_slot() {
   uart_enable_tx();
 }
 
-void cmd_enable_slot() {
+static void cmd_enable_slot() {
   if (rx_len == 3 && rx_buf[1] == ' ' && rx_buf[2] >= '0' && rx_buf[2] <= '9') {
     uint8_t slot_no = (rx_buf[2] - '0');
     set_slot_enabled(slot_no, 1);
@@ -114,7 +115,7 @@ void cmd_enable_slot() {
   uart_enable_tx();
 }
 
-void cmd_format_slots() {
+static void cmd_format_slots() {
   if (rx_len >= 3 && rx_buf[1] == ' ') {
     if (rx_buf[2] >= '0' && rx_buf[2] <= '9') {
       uint8_t slot = (rx_buf[2] - '0');
@@ -138,7 +139,7 @@ void cmd_format_slots() {
   }
 }
 
-void cmd_list_slots() {
+static void cmd_list_slots() {
   tx_len = 0;
   struct Slot slot;
   for (uint8_t i = 0; i < SLOT_MAX; i++) {
@@ -152,7 +153,7 @@ void cmd_list_slots() {
   uart_enable_tx();
 }
 
-void cmd_set_brightness() {
+static void cmd_set_brightness() {
   uint8_t msg_pos = 2, err = 0;
   uint8_t values[4] = {0, 0, 0, 0};
 
@@ -171,13 +172,13 @@ void cmd_set_brightness() {
   }
 }
 
-void cmd_invalid_command() {
+static void cmd_invalid_command() {
   uart_writeln_flash_str(
       F("Invalid command.\r\nW: Write\r\nR: Read\r\nE: Enable\r\nD: "
         "Disable\r\nL: List\r\nF: Format\r\nI: Idenfity\r\nB: Brightness"));
 }
 
-void cmd_identify_board() {
+static void cmd_identify_board() {
   uart_writeln_flash_str(
       F("Board ID: " STR(BOARD_ID) "\nBuild version: " STR(BUILD_VERSION)));
 }

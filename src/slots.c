@@ -15,7 +15,7 @@ struct Slot current_slot = {
     .last_animation = INVALID_ANIMATION,
 };
 
-uint8_t *get_base_address(uint8_t slot_no) {
+static uint8_t *get_base_address(uint8_t slot_no) {
   return (uint8_t *)(slot_no * SLOT_EEPROM_SIZE);
 }
 
@@ -41,7 +41,7 @@ void slot_load(struct Slot *slot) {
   slot->scroll_counter = 0;
 }
 
-void sanitize_chars(char *chars) {
+static inline void sanitize_chars(char *chars) {
   // Iterate over text to process special chars
   uint8_t write_ptr = 0, read_ptr = 0;
   while ((read_ptr < SLOT_TEXT_BUFFER_SIZE) &&

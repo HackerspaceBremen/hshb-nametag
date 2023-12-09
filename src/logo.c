@@ -2,7 +2,7 @@
 
 #include <avr/io.h>
 
-extern uint8_t vRAM[522];
+#include "display.h"
 
 void logo_fill_percent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
   uint8_t leds = (perc * full + 50) / 100;

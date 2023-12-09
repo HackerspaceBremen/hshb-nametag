@@ -9,6 +9,7 @@
 #include <string.h>
 #include <util/delay.h>
 
+#include "animations.h"
 #include "display.h"
 #include "slots.h"
 #include "uart.h"
@@ -52,7 +53,7 @@ static void cmd_write_slot() {
   saveSlot.offset_scroll_speed = read_number(&msg_pos, &err, 0);
   saveSlot.scaler = read_number(&msg_pos, &err, 0);
   saveSlot.char_space = read_number(&msg_pos, &err, 0);
-  if (err || msg_pos >= rx_len) {
+  if (err || msg_pos >= rx_len || saveSlot.animation >= INVALID_ANIMATION) {
     uart_writeln_flash_str(
         F("W <Slot> <Animation> <Seconds/Scrolls> <Text Type> "
           "<Offset/Scroll Speed> <Scaler> <Char Space> <Text>"));

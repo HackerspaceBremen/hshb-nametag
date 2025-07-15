@@ -1,6 +1,8 @@
 # HSHB Nametag
 
-This repositoy contains the source code for the HSHB Nametag, a PCB designed in the [Hackerspace Bremen e.V.](https://www.hackerspace-bremen.de).
+This repositoy contains the source code for the HSHB Nametag, a PCB designed in the [Hackerspace Bremen e.V.](https://www.hackerspace-bremen.de). See also [project description here](https://wiki.hackerspace-bremen.de/mittelantraege/antraege/finanziert/2023/projekt_hshb_led_namensschild).
+
+![](images/platine.png)
 
 ## Prerequisites
 
@@ -35,3 +37,9 @@ A serial console can be opened by running
 ```shell
 $ pio device monitor
 ```
+
+## Web configurator
+
+You can use the [WebConfigurator](/webconfigurator/index.html) locally on your computer to configure your tag. Just connect it to USB and open the webpage in a browser that supports USB-Serial connections.
+
+![](images/screenshot.png)

@@ -1,0 +1,312 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0px;
+    height:100%;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-shadow: 2px 2px 10px #00000076;
+}
+
+.head {
+    padding: 5px 20px;
+	background-image: linear-gradient(to right, #017dcb, #0096F6);
+    color: white;
+}
+
+.help {
+    color: rgb(137, 137, 137);
+    padding: 0px 40px;
+    font-size: small;
+    display:block;
+}
+
+.content {
+    padding: 5px 20px;
+}
+
+.slot {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-left: 0px;
+    margin-right: 15px;
+    margin-bottom: 10px;
+    background-color:#dddddd;
+    border-radius: 5px;
+}
+.slot h3 {
+    font-size:24px;
+    margin: 0 0 10px;
+}
+
+.version {
+    color:#878787;
+    font-size:small;
+    text-align: center;
+    margin-bottom:30px;
+}
+
+.spinnerhide {
+  border: 5px solid rgba(0, 0, 0, 0);
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right:10px;
+  position:relative;
+  bottom:5px;
+}
+
+.spinnershow {
+  border: 5px solid #f3f3f3; /* Light grey */
+  border-top: 5px solid #ded300;
+  border-right: 5px solid green;
+  border-bottom: 5px solid #fd8300;
+  border-left: 5px solid #cd0059;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 0.5s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right:10px;
+  position:relative;
+  bottom:5px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+button {
+    appearance: none;
+    font-weight: bold;
+    font-size: 16px;;
+	background-color:#0096F6;
+	background-image: linear-gradient(to right, #017dcb, #0096F6);
+    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.226);
+    border-radius: 4px;
+    padding:5px 15px;
+}
+
+.writeslot {
+    background-color:#1c8eff;
+    background-image: linear-gradient(to right, #017dcb, #0096F6);    
+    color:white;
+    cursor: pointer;
+    position:absolute;
+    right:50px; 
+}
+
+.writeslotred {
+    background-color:#cd0059;
+	background-image: linear-gradient(to right, #e80165, #cd0059);
+    color:white;
+    cursor: pointer;
+    position:absolute;
+    right:50px;
+}
+
+
+.writeallslots {
+	background-color:#fd8300;
+	background-image: linear-gradient(to right, #fd8300, #c86700);
+    color:white;
+    float:left;
+    margin-right:40px;
+}
+
+.statusred {
+    color:#cf2121;
+}
+
+.statusgreen {
+    color:#2fd923;
+}
+
+.statusyellow {
+    color:#e7d406;
+}
+
+.preparing {
+    cursor: pointer;
+    position:absolute;
+    right:50px;
+	background-color:#a5a5a5;
+	background-image: linear-gradient(to right, #a5a5a5, #878787);
+    color:white;
+    box-shadow: 2px 2px 5px #000;
+}
+
+.disconnected {
+    cursor: pointer;
+    position:absolute;
+    right:50px;
+    background-color:#cd0059;
+	background-image: linear-gradient(to right, #e80165, #cd0059);
+    color:white;
+    box-shadow: 2px 2px 5px #000;
+}
+
+.connected {
+    cursor: pointer;
+    position:absolute;
+    right:50px;
+    background-color:#00804c;
+	background-image: linear-gradient(to right, #009157, #00804c);
+    color:white;
+    box-shadow: 2px 2px 5px #000;
+}
+
+.unconnectable {
+    cursor: pointer;
+    position:absolute;
+    right:50px;
+    background-color:#ded300;
+	background-image: linear-gradient(to right, #ded300, #bdb300);
+    color:black;
+    box-shadow: 2px 2px 5px #000;
+}
+
+input, textarea, select {
+	display:inline-block;
+	margin-left:0px;
+	margin-top:10px;
+	margin-bottom:10px;	
+	padding:3px 10px;
+	font-size:18px;
+	border-radius: 5px;
+	border:2px solid #555;
+	background-color:#F0F0F0;
+	min-width: 10px;
+	min-height: 10px;
+}
+
+
+input[type="text"] {
+    color: black;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    padding:5px 10px;
+    font-size:18px;
+    min-width:80%;
+}
+
+input[type="checkbox"]:checked {
+   	min-width: 20px;
+	min-height: 20px;
+    display:inline;
+    border: 1px solid black;
+    background-color:#00804c;
+    color: white;
+}
+
+input[type="checkbox"] {
+   	min-width: 20px;
+	min-height: 20px; 
+    display:inline;
+    border: 1px solid black;
+    background-color:#48C35B;
+    color: white;
+}
+
+.attention {
+    height:15px;
+	background-color:#000000;
+	padding:5px 10px 5px 10px;
+    margin-left:0px;
+    margin-right:0px;
+	margin-top:0px;
+	margin-bottom:10px;
+	font-weight:normal;
+	font-size:32px;
+	color: white;
+	background: repeating-linear-gradient(
+	  45deg,
+	  transparent,
+	  transparent 10px,
+	  #ffd321 10px,
+	  #ffcc00 20px
+	),
+	linear-gradient(
+	  to bottom,
+	  #000000,
+	  #1a1a1a
+	);
+	/* box-shadow: 2px 2px 5px #000; */
+	border-top:1px solid rgba(0, 0, 0, 0.4);
+	border-bottom:1px solid rgba(0, 0, 0, 0.4);
+}
+
+
+fieldset {
+    display: block;
+    margin: 5px 10px;
+}
+
+legend {
+    font-size:small;
+    color: gray;
+}
+
+.numInput {
+    width: 37px;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {  
+
+   opacity: 1;
+
+}
+
+.writeConfirm {
+    visibility: visible;
+    transition: opacity 0.5s, visibility 0.3s;
+}
+.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+:root {
+  --co-textfld-bg: #ffffff;
+  --co-textfld-border: #333;
+  --co-textfld-active-border: #444;
+  --co-textfld-focus-border: var(--co-body-accent);
+  --margin-label: 0.5em;
+}
+
+label {
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: -0.05em;
+  margin-right:5px;
+  margin-left:15px;
+}
+
+label + input {
+    margin-top: var(--margin-label);
+}
+
+
+select, textarea, input[type="text"], input[type="number"] {
+  border: var(--width-input-border) solid var(--co-textfld-border);
+  background-color: var(--co-textfld-bg);
+}
+
+select, textarea,input[type="text"]:hover, input[type="number"]:hover {
+    border-color: var(--co-textfld-active-border);
+}
+
+select, textarea,input[type="text"]:active, input[type="number"]:active {
+    border-color: var(--co-textfld-active-border);
+}
+
+select, textarea,input[type="text"]:focus, input[type="number"]:focus {
+    border-color: var(--co-textfld-focus-border);
+}

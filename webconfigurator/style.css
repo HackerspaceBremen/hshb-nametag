@@ -7,6 +7,7 @@ body {
 
 h1 {
     text-shadow: 2px 2px 10px #00000076;
+    margin-top:0px;
 }
 
 .head {
@@ -65,7 +66,7 @@ h1 {
     position:relative;
     top:-10px;
     margin-top:0px;
-    margin-left: 50px;
+    margin-left: 70px;
     color:rgba(255, 255, 255, 0.446);
     cursor: pointer;
 }
@@ -74,7 +75,7 @@ h1 {
     position:relative;
     top:-10px;
     margin-top:0px;
-    margin-left: 50px;
+    margin-left: 70px;
     color:white;
     cursor: pointer;
 }
@@ -96,31 +97,34 @@ h1 {
 }
 
 .spinnerhide {
-  border: 5px solid rgba(0, 0, 0, 0);
-  width: 30px;
-  height: 30px;
+  border: none;
+  width: 60px;
+  height: 60px;
   display: inline-block;
   vertical-align: middle;
   margin-right:10px;
+  background-image: url(logo.png);
+  background-size: 60px 60px;
   position:relative;
-  bottom:5px;
+  top:15px;
 }
 
 .spinnershow {
-  border: 5px solid rgba(255, 255, 255, 0);
-  border-top: 5px solid #ddd;
-  border-right: 5px solid #ddd;
+border-style: inset;  
+ border: 2px solid rgba(250, 250, 250, 0);
+  border-top: 2px solid #fff;
+  border-right: 2px solid #fff;
   /* border-bottom: 5px solid gray; */
-  border-left: 5px solid #ddd;
+  border-left: 2px solid #fff;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 56px;
+  height: 56px;
   animation: spin 0.5s linear infinite;
   display: inline-block;
   vertical-align: middle;
   margin-right:10px;
   position:relative;
-  bottom:5px;
+  top:15px;
 }
 
 @keyframes spin {

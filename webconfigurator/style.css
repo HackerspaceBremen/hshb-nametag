@@ -49,6 +49,54 @@ h1 {
     letter-spacing: 0.2em;
 }
 
+.alert {
+    font-size: x-large;
+    letter-spacing: 0.2em;
+    z-index:4;
+    background-color: #017dcb;
+    color: white;
+    width: 40%;
+    padding:30px;
+    position:fixed;
+    top:20%;
+    left:30%;
+    border: 1px solid rgba(128, 128, 128, 0.662);
+    text-align: center;
+    border-radius: 7px;
+    box-shadow: 0px 2px 20px #000000ba;
+    display:none;
+}
+
+/* display:none; */
+
+.alertok {
+    text-shadow: none;
+    letter-spacing: 0.02em;
+    font-size: large;
+    padding: 5px 10px;
+    border:1px solid white;
+    border-radius: 2px;
+    width: 30%;
+    cursor: pointer;
+}
+
+.alertcontent {
+    text-shadow: none;
+    letter-spacing: 0.02em;
+    font-size: large;
+    padding:20px;
+    margin-top:20px;
+    margin-bottom:40px;
+    background-color: #1f97e1;
+    color: white;
+    border: 1px solid rgba(57, 57, 57, 0.269);
+    border-radius: 3px;;
+}
+
+.alertcontent code {
+    color: black;
+}
+
 .slot {
     border: 1px solid #ccc;
     padding: 10px;

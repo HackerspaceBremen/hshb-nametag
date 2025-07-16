@@ -1,5 +1,5 @@
 // CONSTANTS
-const TIMEOUT_DURATION = 50; // millis
+const TIMEOUT_NO_MORE_DATA_EXPECTED = 50; // millis
 const TIMEINTERVAL_SPINNER = 100; // millis
 const TIMEINTERVAL_PORTS = 10000; // millis
 const MAX_NUM_SLOTS = 10;
@@ -19,8 +19,6 @@ let readerAborter = null;
 let writer = null;
 let messageBuffer = '';
 let timeoutId = null;
-let wasDisconnected = false;
-let shouldKillReadLoop = false;
 const slotsContainer = document.getElementById('slots');
 
 // BUILD DOM
@@ -85,6 +83,18 @@ function buildDocument() {
 /********************************
 * GENERAL HELPER FUNCTIONS
 *********************************/
+
+// SHOW AN ALERT MESSAGE
+function alertShowWithInnerHtml(htmlToPlace) {
+    document.getElementById('alertcontent').innerHTML = htmlToPlace;
+    document.getElementById('alert').style.display = 'block';
+}
+
+// DISMISS ALERT MESSAGE
+function alertClose() {
+    document.getElementById('alert').style.display = 'none';
+    document.getElementById('alertcontent').innerHTML = "";
+}
 
 // STORE A VALUE INTO PERSISTENT LOCAL STORE (COOKIES DON'T WORK IN LOCAL MODE)
 function setLocalStore(cname, cvalue, shouldEncodeBase64) {
@@ -276,6 +286,7 @@ function setTextOptionsForSlot(slt) {
 // READLOOP WHICh RUNNS PERMANENTLY TO READ UNTIL TIMEOUT
 async function readLoop() {
     try {
+        console.log( "UART READING: WAITING FOR DATA ..." );
         while( true  ) { // WILL READ AS LONG A NEW DATE IS COMING
             const { value, done } = await reader.read().then();
             if( done ) {
@@ -283,11 +294,12 @@ async function readLoop() {
                 break;
             }
             handleIncomingData(value)
-            console.log( "UART READING: ..." );
+            console.log( "UART READING: GOT DATA ..." );
         }
-        console.log( "UART READING: EXIT OF READLOOP" );
+        console.log( "UART READING: EXIT/CANCELLING READLOOP" );
     }
     catch( error ) {
+        console.error( "READ LOOP: FAILED WITH ERROR\n"+error );
         reader = null;
         if( error.className == "NetworkError" ) {
             console.log( "UART ERROR: Could not READ from device. (NetworkError)" );
@@ -308,7 +320,7 @@ async function handleIncomingData( data ) {
         spinnerShouldShow = false;
         processMessage( messageBuffer );
         messageBuffer = ''; // Clear the buffer for the next message
-    }, TIMEOUT_DURATION);
+    }, TIMEOUT_NO_MORE_DATA_EXPECTED);
 }
 
 // HANDLES A COMPLETE RECEIVED MESSAGE FROM DEVICE
@@ -366,25 +378,29 @@ function receiveUART( msg ) {
 
 // SEND MESSAGE TO DEVICE
 async function sendUART( msg ) {
-    spinnerShouldShow = true;
     console.log( "UART SENDING: "+msg );
     if( port ) {
+        spinnerShouldShow = true;
         try {
             const textEncoder = new TextEncoder();
             writer = port.writable.getWriter();
             await writer.write(textEncoder.encode(msg));
             writer.releaseLock();
+            console.log( "UART SENDING: SUCCESS" );
         }
         catch( error ) {
+            console.log( "UART SENDING: ERROR\n"+error );
             writer = null;
             if( error.className == "NetworkError" ) {
-                console.error( "ERROR: Could not SEND to UART. (NetworkError)" );
+                console.error( "UART SENDING: (NetworkError)" );
             }
+            alertShowWithInnerHtml( "SENDING TO DEVICE FAILED.<br><br><code>"+msg+"</code><br><br>NOT SENT, LOST CONNECTION." );
         }
+        
     }
     else { // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
         setStateToDisconnected();
-        // alert("Port is not open. Please connect to the port first.");
+        // alertShowWithInnerHtml("Port is not open. Please connect to the port first.");
     }
 }
 
@@ -397,7 +413,7 @@ function connectedUART() {
         gettingData = true;
         gettingSlot = 0;
         try {
-            const result = await withTimeout(sendUART("R 0\n"), 5000);
+            sendUART("R 0\n");
         }
         catch( error ) { // TIMEOUT WHILE TRYING TO GET ALL DATA
             console.error( error );
@@ -776,7 +792,7 @@ document.getElementById('connect').addEventListener('click', async () => {
         }
         else {
             console.error( error );
-            alert( "Please select a serial port for your device from the list the browser presented to you." );
+            alertShowWithInnerHtml( "Please select a serial port for your device from the list the browser presented to you." );
         }
     }
 });

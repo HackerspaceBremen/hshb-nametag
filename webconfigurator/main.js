@@ -2,11 +2,9 @@
 const TIMEOUT_DURATION = 50; // millis
 const TIMEINTERVAL_SPINNER = 100; // millis
 const TIMEINTERVAL_PORTS = 10000; // millis
-const MAX_NUM_SLOTS = 9;
+const MAX_NUM_SLOTS = 10;
 const BAUD_RATE = 9600;
-const COOKIE_EXPIRES_IN_DAYS = 365*10; // 10 Years
-const slotsContainer = document.getElementById('slots');
-let portScanTimer = null;
+let openPortCheckTimer = null;
 let spinnerCheckTimer = null;
 let spinnerShouldShow = false;
 let gettingData=false;
@@ -14,22 +12,20 @@ let gettingSlot=0;
 let writingData=false;
 let writingSlot=0;
 let port = null;
-let ports; // LIST OF PORTS WE HAVE PERMISSION TO
-// READ
+let ports = null; // LIST OF PORTS WE HAVE PERMISSION TO
 let reader = null;
 let readableStreamClosed = null;
 let readerAborter = null;
-// WRITE
 let writer = null;
-let writableStreamClosed = null;
 let messageBuffer = '';
 let timeoutId = null;
 let wasDisconnected = false;
 let shouldKillReadLoop = false;
+const slotsContainer = document.getElementById('slots');
 
 // BUILD DOM
 function buildDocument() {
-    for (let i = 0; i <= MAX_NUM_SLOTS; i++) {
+    for (let i = 0; i < MAX_NUM_SLOTS; i++) {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'slot';
         slotDiv.innerHTML = `
@@ -91,7 +87,7 @@ function buildDocument() {
 *********************************/
 
 // STORE A VALUE INTO PERSISTENT LOCAL STORE (COOKIES DON'T WORK IN LOCAL MODE)
-function setLocalStore(cname, cvalue, daysToLive,shouldEncodeBase64) {
+function setLocalStore(cname, cvalue, shouldEncodeBase64) {
     // console.log( "LOCAL STORE: WRITING ... NAME: "+cname+"  VALUE: "+cvalue );
     let encodedValue = cvalue;
     if( shouldEncodeBase64 ) {
@@ -204,7 +200,7 @@ function writeSlot(slt) {
     else { // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
         sendUART("D "+slt+"\n");
     }
-    if( writingData && writingSlot < MAX_NUM_SLOTS ) {
+    if( writingData && writingSlot <= MAX_NUM_SLOTS ) {
         spinnerShouldShow = true;
         writingSlot++;
         // launch delayed next write
@@ -355,7 +351,7 @@ function receiveUART( msg ) {
    console.log( "UART RECEIVED: "+msg );
     
     if( gettingData ) {
-        if( gettingSlot < MAX_NUM_SLOTS ) {
+        if( gettingSlot <= MAX_NUM_SLOTS ) {
             gettingSlot++; // SEND COMMAND TO READ NEXT SLOT...
             sendUART( "R "+gettingSlot+"\n" );
         }
@@ -454,9 +450,9 @@ async function hasAlreadyWorkingPort() {
 
 // STOPS ALL AUTO-RECONNECT TIMERS & SPINNER TIMER AND CLOSES PORT
 async function disconnectFromDevice() {
-    if( portScanTimer ) {
-        clearInterval(portScanTimer);
-        portScanTimer = null;
+    if( openPortCheckTimer ) {
+        clearInterval(openPortCheckTimer);
+        openPortCheckTimer = null;
     }    
     if( spinnerCheckTimer ) {
         clearInterval(spinnerCheckTimer);
@@ -468,6 +464,7 @@ async function disconnectFromDevice() {
             console.log( "PORT: CLOSING..." );
             await port.close();
             console.log( "PORT: CLOSED." );
+            port = null;
             setStateToDisconnected();
         }
         catch (error) {
@@ -479,14 +476,14 @@ async function disconnectFromDevice() {
 // THE PORT SCANNER WILL INITIATE A RECONNECT
 function reconnectToDevice() {
     // START SCANNING PORT AVAILABILITY CONTINOUSLY IN INTERVALS
-    if( portScanTimer == null ) {
-        portScanTimer = setInterval( portsCheck, TIMEINTERVAL_PORTS );        
+    if( openPortCheckTimer == null ) {
+        openPortCheckTimer = setInterval( checkOpenPort, TIMEINTERVAL_PORTS );        
     }
     // SPINNER MONITORING (USES BOOl FLAG BECAUSE THIS WORKS BEST)
     if( spinnerCheckTimer == null ) {
         spinnerCheckTimer = setInterval( spinnerCheck, TIMEINTERVAL_SPINNER );
     }
-    portsCheck();
+    checkOpenPort();
 }
 
 // USED TO RELEASE LOCKS BEFORE WE CAN CLOSE THE PORT OF THE CONNECTION
@@ -525,7 +522,7 @@ async function releaseAllLocks() {
 }
 
 // CHECKS IF WE HAVE A VALID PORT AND IF THE PORT IS PROPERLY ACESSIBLE (GETS CALLED A LOT)
-async function portsCheck() {
+async function checkOpenPort() {
     accessiblePort = await getAvailablePort();
     if( accessiblePort ) { // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
         port = accessiblePort;
@@ -555,7 +552,7 @@ async function portsCheck() {
                 }
                 else { // READABLE, ALL FINE DO NOTHING
                     // DO NOTHING
-                    prt = accessiblePort;
+                    port = accessiblePort;
                 }
             } catch (error) {
                 console.error( error );
@@ -582,7 +579,7 @@ async function portsCheck() {
     }
     else {
         if( hasAlreadyWorkingPort() ) {
-            port = getAvailablePort();
+            port = await getAvailablePort();
             // RE-READ INFOS FROM DEVICE...
             reconnectToDevice();
         }
@@ -611,7 +608,7 @@ function getDeviceName() {
     }
     else { // STORE NEW INFO
         isKnownDevice = false;
-        setLocalStore( "usbProductId", usbProductId, COOKIE_EXPIRES_IN_DAYS );
+        setLocalStore( "usbProductId", usbProductId, false );
     }
     let storedVendorId = getLocalStore( "usbVendorId", false );
     if( ""+usbVendorId == ""+storedVendorId ) { // ALREADY KNOWN VENDOR
@@ -619,7 +616,7 @@ function getDeviceName() {
     }
     else { // STORE NEW INFO
         isKnownDevice = false;
-        setLocalStore( "usbVendorId", usbVendorId );
+        setLocalStore( "usbVendorId", usbVendorId, false );
     }
     console.log( "DEVICE NAME FOUND: "+usbDeviceName );
     return usbDeviceName;
@@ -627,15 +624,22 @@ function getDeviceName() {
 
 // ENTER A HUMAN READABLE NAME FOR THE DEVICE CONNECTED
 function askForDevicename() {
+    if( port == null ) return null;
     let deviceName = getDeviceName();
     const { usbProductId } = port.getInfo();
-    let placeholder = deviceName ? deviceName : "HSHB Name Tag";
-    let usbDeviceName = prompt("Please enter a name for your device", placeholder);
-    if (usbDeviceName != null) {
-        setLocalStore( "knownDeviceName-"+usbProductId, usbDeviceName, COOKIE_EXPIRES_IN_DAYS, true );
+    if( usbProductId != undefined ) {
+        let placeholder = deviceName ? deviceName : "HSHB Name Tag";
+        let usbDeviceName = prompt("Please enter a name for your device", placeholder);
+        if (usbDeviceName != null) {
+            if( usbDeviceName == "" ) {
+                localStorage.removeItem( "knownDeviceName-"+usbProductId );
+            }
+            else {
+                setLocalStore( "knownDeviceName-"+usbProductId, usbDeviceName, true );
+            }
+        }
     }
     setStateForDeviceName();
-    return usbDeviceName;
 }
 
 // UPDATES THE DISPLAY FOR THE DEVICE NAME
@@ -646,9 +650,17 @@ function setStateForDeviceName() {
         toggleClassForElementWithIdTo("devicename","devicenameshown");
     }
     else {
-        document.getElementById('devicename').innerHTML = "Unknown device";
-        toggleClassForElementWithIdTo("devicename","devicenameunknown");            
+        // TRY TO REPLACE WITH MEANINGFUL STUFF
+        if( port != null ) {
+            const { usbProductId, usbVendorId } = port.getInfo();
+            document.getElementById('devicename').innerHTML = "Unknown (prodId: "+usbProductId+" vendId: "+usbVendorId+")";
+        }   
+        else {
+            document.getElementById('devicename').innerHTML = "Unknown device";
+        }
+        toggleClassForElementWithIdTo("devicename","devicenameunknown");
     }
+
 }
 
 /********************************
@@ -669,9 +681,9 @@ function setStateIncompatible() {
     // DEVICE
     toggleClassForElementWithIdTo("devicename","devicenameunknown");
     document.getElementById('devicename').innerHTML = "Unknown device";
-    if( portScanTimer ) {
-        clearInterval(portScanTimer);
-        portScanTimer = null;
+    if( openPortCheckTimer ) {
+        clearInterval(openPortCheckTimer);
+        openPortCheckTimer = null;
     }    
 }
 
@@ -690,9 +702,9 @@ function setStateToDisconnected() {
     // DEVICE
     toggleClassForElementWithIdTo("devicename","devicenameunknown");
     document.getElementById('devicename').innerHTML = "Unknown device";
-    if( portScanTimer ) {
-        clearInterval(portScanTimer);
-        portScanTimer = null;
+    if( openPortCheckTimer ) {
+        clearInterval(openPortCheckTimer);
+        openPortCheckTimer = null;
     }    
 }
 
@@ -709,8 +721,8 @@ function setStateToConnected() {
     toggleClassForElementWithIdTo('disconnectbutton',"disconnectbutton");
     // DEVICE
     setStateForDeviceName();
-    if( portScanTimer == null ) {
-        portScanTimer = setInterval( portsCheck, TIMEINTERVAL_PORTS );        
+    if( openPortCheckTimer == null ) {
+        openPortCheckTimer = setInterval( checkOpenPort, TIMEINTERVAL_PORTS );        
     }    
 }
 

@@ -11,8 +11,22 @@ h1 {
 
 .head {
     padding: 5px 20px;
-	background-image: linear-gradient(to right, #017dcb, #0096F6);
+	background-image: linear-gradient(-45deg, #035c93, #017dcb,#029af9, #1a83c5, #076caa);
     color: white;
+    background-size: 400% 400%;
+    animation: animated_gradient 30s ease infinite;
+}
+
+@keyframes animated_gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 .help {
@@ -77,6 +91,10 @@ h1 {
     display:inline;
 }
 
+.devicenameunknown:hover + .editsymbol {
+    display:inline;
+}
+
 .spinnerhide {
   border: 5px solid rgba(0, 0, 0, 0);
   width: 30px;
@@ -89,11 +107,11 @@ h1 {
 }
 
 .spinnershow {
-  border: 5px solid #f3f3f3; /* Light grey */
-  border-top: 5px solid #ded300;
-  border-right: 5px solid green;
-  border-bottom: 5px solid #fd8300;
-  border-left: 5px solid #cd0059;
+  border: 5px solid rgba(255, 255, 255, 0);
+  border-top: 5px solid #ddd;
+  border-right: 5px solid #ddd;
+  /* border-bottom: 5px solid gray; */
+  border-left: 5px solid #ddd;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -150,7 +168,7 @@ button {
 }
 
 .statusred {
-    color:#cf2121;
+    color:#f93f4b;
 }
 
 .statusgreen {
@@ -169,7 +187,7 @@ button {
 	background-color:#ccc;
 	background-image: linear-gradient(to right, #aaa, #777);
     color:white;
-    box-shadow: 2px 2px 5px #000;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .disconnectbuttonhidden {
@@ -183,7 +201,7 @@ button {
 	background-color:#fd8300;
 	background-image: linear-gradient(to right, #fd8300, #c86700);
     color:white;
-    box-shadow: 2px 2px 5px #000;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .disconnected {
@@ -193,7 +211,7 @@ button {
     background-color:#cd0059;
 	background-image: linear-gradient(to right, #e80165, #cd0059);
     color:white;
-    box-shadow: 2px 2px 5px #000;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .connected {
@@ -203,7 +221,7 @@ button {
     background-color:#00804c;
 	background-image: linear-gradient(to right, #009157, #00804c);
     color:white;
-    box-shadow: 2px 2px 5px #000;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .unconnectable {
@@ -213,7 +231,7 @@ button {
     background-color:#ded300;
 	background-image: linear-gradient(to right, #ded300, #bdb300);
     color:black;
-    box-shadow: 2px 2px 5px #000;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 input, textarea, select {
@@ -281,9 +299,9 @@ input[type="checkbox"] {
 	  #000000,
 	  #1a1a1a
 	);
-	/* box-shadow: 2px 2px 5px #000; */
-	border-top:1px solid rgba(0, 0, 0, 0.4);
-	border-bottom:1px solid rgba(0, 0, 0, 0.4);
+	box-shadow: 0px 4px 8px #000;
+	border-top:1px solid rgba(0, 0, 0, 0.5);
+	border-bottom:1px solid rgba(0, 0, 0, 0.5);
 }
 
 

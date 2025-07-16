@@ -47,6 +47,36 @@ h1 {
     margin-bottom:30px;
 }
 
+.devicenameunknown {
+    position:relative;
+    top:-10px;
+    margin-top:0px;
+    margin-left: 50px;
+    color:rgba(255, 255, 255, 0.446);
+    cursor: pointer;
+}
+
+.devicenameshown {
+    position:relative;
+    top:-10px;
+    margin-top:0px;
+    margin-left: 50px;
+    color:white;
+    cursor: pointer;
+}
+
+.editsymbol {
+    position:relative;
+    top:-10px;
+    display: none;
+    color: rgba(255, 255, 255, 0.473);
+    font-size: small;
+}
+
+.devicenameshown:hover + .editsymbol {
+    display:inline;
+}
+
 .spinnerhide {
   border: 5px solid rgba(0, 0, 0, 0);
   width: 30px;
@@ -91,13 +121,13 @@ button {
     border: 1px solid rgba(0, 0, 0, 0.226);
     border-radius: 4px;
     padding:5px 15px;
+    cursor: pointer;
 }
 
 .writeslot {
     background-color:#1c8eff;
     background-image: linear-gradient(to right, #017dcb, #0096F6);    
     color:white;
-    cursor: pointer;
     position:absolute;
     right:50px; 
 }
@@ -106,7 +136,6 @@ button {
     background-color:#cd0059;
 	background-image: linear-gradient(to right, #e80165, #cd0059);
     color:white;
-    cursor: pointer;
     position:absolute;
     right:50px;
 }
@@ -132,19 +161,34 @@ button {
     color:#e7d406;
 }
 
-.preparing {
-    cursor: pointer;
+.disconnectbutton {
+    display:inline;
     position:absolute;
     right:50px;
-	background-color:#a5a5a5;
-	background-image: linear-gradient(to right, #a5a5a5, #878787);
+    top:60px;
+	background-color:#ccc;
+	background-image: linear-gradient(to right, #aaa, #777);
+    color:white;
+    box-shadow: 2px 2px 5px #000;
+}
+
+.disconnectbuttonhidden {
+    display:none;
+}
+
+.preparing {
+    position:absolute;
+    top:20px;
+    right:50px;
+	background-color:#fd8300;
+	background-image: linear-gradient(to right, #fd8300, #c86700);
     color:white;
     box-shadow: 2px 2px 5px #000;
 }
 
 .disconnected {
-    cursor: pointer;
     position:absolute;
+    top:20px;
     right:50px;
     background-color:#cd0059;
 	background-image: linear-gradient(to right, #e80165, #cd0059);
@@ -153,8 +197,8 @@ button {
 }
 
 .connected {
-    cursor: pointer;
     position:absolute;
+    top:20px;
     right:50px;
     background-color:#00804c;
 	background-image: linear-gradient(to right, #009157, #00804c);
@@ -163,8 +207,8 @@ button {
 }
 
 .unconnectable {
-    cursor: pointer;
     position:absolute;
+    top:20px;
     right:50px;
     background-color:#ded300;
 	background-image: linear-gradient(to right, #ded300, #bdb300);

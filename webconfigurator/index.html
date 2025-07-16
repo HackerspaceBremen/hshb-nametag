@@ -9,10 +9,11 @@
 </head>
 <body>
     <div class="head">
-    <h1><span id="spinner" class="spinnerhide"></span>Name Tag Configurator&nbsp;<span id="status" class="statusred"></span><button id="connect" class="preparing">Please wait ...</button></h1>
+    <h1><span id="spinner" class="spinnerhide"></span>Name Tag Configurator&nbsp;<span id="status" class="statusred"></span><button id="connect" class="preparing">Connect device & select USB port ...</button><button id="disconnectbutton" class="disconnectbuttonhidden" onclick="disconnectFromDevice();">Disconnect</button></h1>
+    <div><span id="devicename" class="devicenameunknown" onclick="askForDevicename();">Unknown Device</span><span class="editsymbol">&nbsp;(Click to edit)</span></div>
     </div>
     <div class="attention"></div>
-    <div class="content">
+    <div class="content" style="margin-bottom:20px;">
         <button onclick="askWriteAllSlots()" class="writeallslots">Send all slots...</button>
         <span id="help" class="help">Please connect your badge via USB cable to the computer. Then click the "Connect via USB"-button to start interaction with the badge. It should automatically load the configured Slots.</span>
     </div>
@@ -21,7 +22,7 @@
     </div>
     <br clear="all">
     <div class="attention"></div>
-    <div class="version">Name Tag Configurator — Version 1.4 — <a href="https://phino.eu/nametag/">see online</a></div>
+    <div class="version">Name Tag Configurator — Version 1.5 — <a href="https://phino.eu/nametag/">see online</a></div>
   <script src="main.js"></script>
 </body>
 </html>

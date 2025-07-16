@@ -795,8 +795,13 @@ document.getElementById('connect').addEventListener('click', async () => {
     }
 });
 
-// ADD BROWSER-LISTENER WHAT TO DO IN CASE WE RE-/CONNECT TO DEVICE
-if( navigator && ("serial" in navigator) ) {
+
+// CHECK IF RIGHT/COMPATIBLE BROWSER, IF NOT SHOW THAT TO USER
+if( !isBrowserCompatible() ) {
+    console.log( "ERROR: BROWSER DOES NOT PROVIDE WEB SERIAL-/USB-API." );
+}
+else {
+    // ADD BROWSER-LISTENER WHAT TO DO IN CASE WE RE-/CONNECT TO DEVICE
     navigator.serial.addEventListener("connect", (event) => {
         setStateToConnected();
     });
@@ -805,13 +810,7 @@ if( navigator && ("serial" in navigator) ) {
     navigator.serial.addEventListener("disconnect", (event) => {
         setStateToDisconnected();
     });
-}
 
-// CHECK IF RIGHT/COMPATIBLE BROWSER, IF NOT SHOW THAT TO USER
-if( !isBrowserCompatible() ) {
-    console.log( "ERROR: BROWSER DOES NOT PROVIDE WEB SERIAL-/USB-API." );
-}
-else {
     if( hasAlreadyWorkingPort() ) {
         port = getAvailablePort();
         // RE-READ INFOS FROM DEVICE...

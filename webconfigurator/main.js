@@ -169,6 +169,7 @@ function spinnerCheck() {
 
 // USER WANTS ALL SLOTS TO BE WRITTEN TO DEVICE
 function askWriteAllSlots() {
+    if( port == null ) return;
     if( confirm("Really write all slots now?\n\nWARNING: Inactive slots will be cleared!") ) {
         writeAllSlots();
     }
@@ -176,6 +177,7 @@ function askWriteAllSlots() {
 
 // CONFIGURING WRITE PROCESS TO WRITE ALL SLOTS
 function writeAllSlots() {
+    if( port == null ) return;
     spinnerShouldShow = true;
     console.log("SENDING ALL SLOTS...");
     writingData = true;
@@ -185,6 +187,7 @@ function writeAllSlots() {
 
 // WRITING ONE SLOT AND CONTINUING TO WRITE MORE SLOTS IF CONFIGURED
 function writeSlot(slt) {
+    if( port == null ) return;
     spinnerShouldShow = true;
     if(document.getElementById("active-"+slt).checked) { // WRITE THIS SLOT
         cmd = "W "+slt+" ";
@@ -200,7 +203,7 @@ function writeSlot(slt) {
     else { // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
         sendUART("D "+slt+"\n");
     }
-    if( writingData && writingSlot <= MAX_NUM_SLOTS ) {
+    if( writingData && writingSlot < MAX_NUM_SLOTS-1 ) {
         spinnerShouldShow = true;
         writingSlot++;
         // launch delayed next write
@@ -351,7 +354,7 @@ function receiveUART( msg ) {
    console.log( "UART RECEIVED: "+msg );
     
     if( gettingData ) {
-        if( gettingSlot <= MAX_NUM_SLOTS ) {
+        if( gettingSlot < MAX_NUM_SLOTS-1 ) {
             gettingSlot++; // SEND COMMAND TO READ NEXT SLOT...
             sendUART( "R "+gettingSlot+"\n" );
         }

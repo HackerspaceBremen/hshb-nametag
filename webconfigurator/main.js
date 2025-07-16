@@ -167,109 +167,6 @@ function spinnerCheck() {
     }
 }
 
-async function releaseAllLocks() {
-    try {
-        if( port != null ) {
-            console.log( "PORT: RELEASING LOCKS... " );
-            if( port.readable ) {
-                console.warn( "READABLE LOCKED: "+port.readable.locked);
-            }
-            if( port.writable ) {
-                console.warn( "WRITABLE LOCKED: "+port.writable.locked);
-            }
-
-
-            if( port.readable && port.readable.locked ) {
-                readerAborter.abort();
-                reader.cancel();
-                await readableStreamClosed.catch(Object);
-            }
-            if( port.writable && port.writable.locked ) {
-                writer.cancel();
-            }
-
-            if( port.readable ) {
-                console.info( "READABLE LOCKED: "+port.readable.locked);
-            }
-            if( port.writable ) {
-                console.info( "WRITABLE LOCKED: "+port.writable.locked);
-            }
-        }
-    }
-    catch (error) {
-        console.error( error );        
-    }
-}
-
-// CHECKS IF WE HAVE A VALID PORT AND IF THE PORT IS PROPERLY ACESSIBLE (GETS CALLED A LOT)
-async function portsCheck() {
-    ports = await navigator.serial.getPorts();    
-    accessiblePort = ports[0];
-    if( accessiblePort ) { // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
-        port = accessiblePort;
-        console.log( "PORT IS "+( accessiblePort.connected ? "CONNECTED" : "DISCONNECTED" ) );
-        console.log( "PORT IS "+( accessiblePort.readable ? "OPEN" : "CLOSED" ) );
-        if( accessiblePort.connected ) { // IS AT LEAST CONNECTED, TRY READING...
-            try {
-                if( !accessiblePort.readable ) { // NOT READABLE TRY CLOSE AND REOPENING
-                    // TRY RELEASING LOCKS
-                    await releaseAllLocks();
-                    // TRY OPENING DYSFUNCTIONAL PORT
-                    try {
-                        await accessiblePort.open({ baudRate: BAUD_RATE });    
-                        const textDecoder = new TextDecoderStream();
-                        readerAborter = new AbortController;
-                        readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
-                        reader = textDecoder.readable.getReader();
-                        // LAUNCH READ LOOP...
-                        readLoop();
-                        // FETCH INFOS FROM TAG
-                        connectedUART();
-                    }
-                    catch (error) {
-                        console.error( error );        
-                    }
-                    
-                }
-                else { // READABLE, ALL FINE DO NOTHING
-                    // DO NOTHING
-                    prt = accessiblePort;
-                }
-            } catch (error) {
-                console.error( error );
-            }
-        }
-        else { // NOT CONNECTED, TRY CONNECTION & READING
-            try {
-                // TRY RELEASING LOCKS
-                await releaseAllLocks();                    
-                await accessiblePort.open({ baudRate: BAUD_RATE });
-                const textDecoder = new TextDecoderStream();
-                readerAborter = new AbortController;
-                readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
-                reader = textDecoder.readable.getReader();
-                // LAUNCH READ LOOP...
-                readLoop();
-                // FETCH INFOS FROM TAG
-                connectedUART();
-            }
-            catch( error ) {
-                console.error( error );
-            }
-        }
-    }
-    else {
-        if( hasAlreadyWorkingPort() ) {
-            port = getAvailablePort();
-            // RE-READ INFOS FROM DEVICE...
-            reconnectToDevice();
-        }
-        else {
-            console.log( "NO DEVICE CONNECTED." );
-        }
-    }
-}
-
 /********************************
 * HTML RELATED ACTIONS TRIGGERED VIA THE UI
 *********************************/
@@ -511,136 +408,51 @@ function connectedUART() {
 }
 
 /********************************
-* DEVICE NAME HANDLING
+* SERIAL CONNECTION OPEN/CLOSE
 *********************************/
 
-function getDeviceName() {
-    if( port == null ) return null;
-    const { usbProductId, usbVendorId } = port.getInfo();
-    if( usbProductId == undefined || usbVendorId == undefined ) return undefined;
-    let usbDeviceName = null;
-    let isKnownDevice = false;
-    let storedProductId = getLocalStore( "usbProductId", false );
-    if( ""+usbProductId == ""+storedProductId ) { // ALREADY KNOWN PRODUCT
-        isKnownDevice = true;
-        usbDeviceName = getLocalStore( "knownDeviceName-"+usbProductId, true );
-    }
-    else { // STORE NEW INFO
-        isKnownDevice = false;
-        setLocalStore( "usbProductId", usbProductId, COOKIE_EXPIRES_IN_DAYS );
-    }
-    let storedVendorId = getLocalStore( "usbVendorId", false );
-    if( ""+usbVendorId == ""+storedVendorId ) { // ALREADY KNOWN VENDOR
-        isKnownDevice = true;
-    }
-    else { // STORE NEW INFO
-        isKnownDevice = false;
-        setLocalStore( "usbVendorId", usbVendorId );
-    }
-    console.log( "DEVICE NAME FOUND: "+usbDeviceName );
-    return usbDeviceName;
-}
-
-function askForDevicename() {
-    let deviceName = getDeviceName();
-    const { usbProductId } = port.getInfo();
-    let placeholder = deviceName ? deviceName : "HSHB Name Tag";
-    let usbDeviceName = prompt("Please enter a name for your device", placeholder);
-    if (usbDeviceName != null) {
-        setLocalStore( "knownDeviceName-"+usbProductId, usbDeviceName, COOKIE_EXPIRES_IN_DAYS, true );
-    }
-    setStateForDeviceName();
-    return usbDeviceName;
-}
-
-async function getAvailablePort() {
-    await navigator.serial.getPorts().then( (ports) => {
-        let currentPort = null;
-        for( let i = 0; i < ports.length; i++ ) {
-            currentPort = ports[i];
-            const { usbProductId, usbVendorId } = currentPort.getInfo();
-            // console.log( "AVAILABLE PORTS: PORT #"+i+" AVAILABLE: usbProductId: "+usbProductId+" usbVendorId: "+usbVendorId );
-            if( currentPort != null ) {
-                return currentPort;
-            }
+// IF THERE ARE ACCESSIBLE PORTS, IT RETURNS THE FIRST PORT FOUND
+async function getAvailablePort() { 
+    ports = await navigator.serial.getPorts();
+    let currentPort = null;
+    let portFound = null;
+    for( let i = 0; i < ports.length; i++ ) {
+        currentPort = ports[i];
+        const { usbProductId, usbVendorId } = currentPort.getInfo();
+        // console.log( "AVAILABLE PORTS: PORT #"+i+" AVAILABLE: usbProductId: "+usbProductId+" usbVendorId: "+usbVendorId );
+        if( currentPort != null ) {
+            portFound = currentPort;
+            break;
         }
-        // console.log( "AVAILABLE PORTS: NONE." );
-        return currentPort;
-    } );
-}
-
-function setStateForDeviceName() {
-    let usbDeviceName = getDeviceName();
-    if( usbDeviceName != null ) {
-        document.getElementById('devicename').innerHTML = usbDeviceName;
-        toggleClassForElementWithIdTo("devicename","devicenameshown");
+    }
+    if( portFound == null ) {
+        // console.log( "AVAILABLE PORT: NONE." );
     }
     else {
-        document.getElementById('devicename').innerHTML = "Unknown device";
-        toggleClassForElementWithIdTo("devicename","devicenameunknown");            
+        console.log( "AVAILABLE PORT: "+portFound );
+    }
+    return portFound;
+}
+
+// CHECK IF WE ALREADY HAVE ACCESS TO A PORT (PERMISSION)
+async function hasAlreadyWorkingPort() {
+    try {
+        ports = await navigator.serial.getPorts();    
+        accessiblePort = ports[0];
+        if( accessiblePort != null && accessiblePort.connected && accessiblePort.readable ) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    } 
+    catch( error ) {
+        console.error( error );
+        return false;
     }
 }
 
-/********************************
-* CORE CONNECTION STATE HANDLING
-*********************************/
-
-function setStateIncompatible() {
-    spinnerShouldShow = false;
-    // STATUS
-    toggleClassForElementWithIdTo('status',"statusyellow");
-    document.getElementById('status').innerHTML = '(Incompatible)';
-    // HELP TEXT
-    document.getElementById('help').innerHTML = 'Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.';
-    // BUTTON
-    toggleClassForElementWithIdTo('connect',"unconnectable");
-    document.getElementById('connect').innerHTML = 'Connections via USB not supported by this Browser!';
-    // DEVICE
-    toggleClassForElementWithIdTo("devicename","devicenameunknown");
-    document.getElementById('devicename').innerHTML = "Unknown device";
-    if( portScanTimer ) {
-        clearInterval(portScanTimer);
-        portScanTimer = null;
-    }    
-}
-
-function setStateToDisconnected() {
-    spinnerShouldShow = false;
-    // STATUS
-    toggleClassForElementWithIdTo('status', "statusred");
-    document.getElementById('status').innerHTML = '(Disconnected)';
-    // BUTTON
-    toggleClassForElementWithIdTo('connect',"disconnected");
-    document.getElementById('connect').innerHTML = 'Connect via USB ...';
-    // DISCONNECT BUTTON
-    toggleClassForElementWithIdTo('disconnectbutton',"disconnectbuttonhidden");
-    disconnectbutton
-    // DEVICE
-    toggleClassForElementWithIdTo("devicename","devicenameunknown");
-    document.getElementById('devicename').innerHTML = "Unknown device";
-    if( portScanTimer ) {
-        clearInterval(portScanTimer);
-        portScanTimer = null;
-    }    
-}
-
-function setStateToConnected() {
-    spinnerShouldShow = false;
-    // STATUS
-    toggleClassForElementWithIdTo('status',"statusgreen");
-    document.getElementById('status').innerHTML = '(Connected)';
-    // BUTTON
-    toggleClassForElementWithIdTo('connect',"connected" );
-    document.getElementById('connect').innerHTML = 'Connected via USB';
-    // DISCONNECT BUTTON
-    toggleClassForElementWithIdTo('disconnectbutton',"disconnectbutton");
-    // DEVICE
-    setStateForDeviceName();
-    if( portScanTimer == null ) {
-        portScanTimer = setInterval( portsCheck, TIMEINTERVAL_PORTS );        
-    }    
-}
-
+// STOPS ALL AUTO-RECONNECT TIMERS & SPINNER TIMER AND CLOSES PORT
 async function disconnectFromDevice() {
     if( portScanTimer ) {
         clearInterval(portScanTimer);
@@ -677,6 +489,232 @@ function reconnectToDevice() {
     portsCheck();
 }
 
+// USED TO RELEASE LOCKS BEFORE WE CAN CLOSE THE PORT OF THE CONNECTION
+async function releaseAllLocks() {
+    try {
+        if( port != null ) {
+            console.log( "PORT: RELEASING LOCKS... " );
+            if( port.readable ) {
+                console.warn( "READABLE LOCKED: "+port.readable.locked);
+            }
+            if( port.writable ) {
+                console.warn( "WRITABLE LOCKED: "+port.writable.locked);
+            }
+
+
+            if( port.readable && port.readable.locked ) {
+                readerAborter.abort();
+                reader.cancel();
+                await readableStreamClosed.catch(Object);
+            }
+            if( port.writable && port.writable.locked ) {
+                writer.cancel();
+            }
+
+            if( port.readable ) {
+                console.info( "READABLE LOCKED: "+port.readable.locked);
+            }
+            if( port.writable ) {
+                console.info( "WRITABLE LOCKED: "+port.writable.locked);
+            }
+        }
+    }
+    catch (error) {
+        console.error( error );        
+    }
+}
+
+// CHECKS IF WE HAVE A VALID PORT AND IF THE PORT IS PROPERLY ACESSIBLE (GETS CALLED A LOT)
+async function portsCheck() {
+    accessiblePort = await getAvailablePort();
+    if( accessiblePort ) { // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
+        port = accessiblePort;
+        console.log( "PORT IS "+( accessiblePort.connected ? "CONNECTED" : "DISCONNECTED" ) );
+        console.log( "PORT IS "+( accessiblePort.readable ? "OPEN" : "CLOSED" ) );
+        if( accessiblePort.connected ) { // IS AT LEAST CONNECTED, TRY READING...
+            try {
+                if( !accessiblePort.readable ) { // NOT READABLE TRY CLOSE AND REOPENING
+                    // TRY RELEASING LOCKS
+                    await releaseAllLocks();
+                    // TRY OPENING DYSFUNCTIONAL PORT
+                    try {
+                        await accessiblePort.open({ baudRate: BAUD_RATE });    
+                        const textDecoder = new TextDecoderStream();
+                        readerAborter = new AbortController;
+                        readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
+                        reader = textDecoder.readable.getReader();
+                        // LAUNCH READ LOOP...
+                        readLoop();
+                        // FETCH INFOS FROM TAG
+                        connectedUART();
+                    }
+                    catch (error) {
+                        console.error( error );        
+                    }
+                    
+                }
+                else { // READABLE, ALL FINE DO NOTHING
+                    // DO NOTHING
+                    prt = accessiblePort;
+                }
+            } catch (error) {
+                console.error( error );
+            }
+        }
+        else { // NOT CONNECTED, TRY CONNECTION & READING
+            try {
+                // TRY RELEASING LOCKS
+                await releaseAllLocks();                    
+                await accessiblePort.open({ baudRate: BAUD_RATE });
+                const textDecoder = new TextDecoderStream();
+                readerAborter = new AbortController;
+                readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
+                reader = textDecoder.readable.getReader();
+                // LAUNCH READ LOOP...
+                readLoop();
+                // FETCH INFOS FROM TAG
+                connectedUART();
+            }
+            catch( error ) {
+                console.error( error );
+            }
+        }
+    }
+    else {
+        if( hasAlreadyWorkingPort() ) {
+            port = getAvailablePort();
+            // RE-READ INFOS FROM DEVICE...
+            reconnectToDevice();
+        }
+        else {
+            console.log( "NO DEVICE CONNECTED." );
+        }
+    }
+}
+
+
+/********************************
+* DEVICE NAME HANDLING
+*********************************/
+
+// TRIES TO FIND STORED NAME FOR DEVICE WITH PRODUCT ID
+function getDeviceName() {
+    if( port == null ) return null;
+    const { usbProductId, usbVendorId } = port.getInfo();
+    if( usbProductId == undefined || usbVendorId == undefined ) return undefined;
+    let usbDeviceName = null;
+    let isKnownDevice = false;
+    let storedProductId = getLocalStore( "usbProductId", false );
+    if( ""+usbProductId == ""+storedProductId ) { // ALREADY KNOWN PRODUCT
+        isKnownDevice = true;
+        usbDeviceName = getLocalStore( "knownDeviceName-"+usbProductId, true );
+    }
+    else { // STORE NEW INFO
+        isKnownDevice = false;
+        setLocalStore( "usbProductId", usbProductId, COOKIE_EXPIRES_IN_DAYS );
+    }
+    let storedVendorId = getLocalStore( "usbVendorId", false );
+    if( ""+usbVendorId == ""+storedVendorId ) { // ALREADY KNOWN VENDOR
+        isKnownDevice = true;
+    }
+    else { // STORE NEW INFO
+        isKnownDevice = false;
+        setLocalStore( "usbVendorId", usbVendorId );
+    }
+    console.log( "DEVICE NAME FOUND: "+usbDeviceName );
+    return usbDeviceName;
+}
+
+// ENTER A HUMAN READABLE NAME FOR THE DEVICE CONNECTED
+function askForDevicename() {
+    let deviceName = getDeviceName();
+    const { usbProductId } = port.getInfo();
+    let placeholder = deviceName ? deviceName : "HSHB Name Tag";
+    let usbDeviceName = prompt("Please enter a name for your device", placeholder);
+    if (usbDeviceName != null) {
+        setLocalStore( "knownDeviceName-"+usbProductId, usbDeviceName, COOKIE_EXPIRES_IN_DAYS, true );
+    }
+    setStateForDeviceName();
+    return usbDeviceName;
+}
+
+// UPDATES THE DISPLAY FOR THE DEVICE NAME
+function setStateForDeviceName() {
+    let usbDeviceName = getDeviceName();
+    if( usbDeviceName != null ) {
+        document.getElementById('devicename').innerHTML = usbDeviceName;
+        toggleClassForElementWithIdTo("devicename","devicenameshown");
+    }
+    else {
+        document.getElementById('devicename').innerHTML = "Unknown device";
+        toggleClassForElementWithIdTo("devicename","devicenameunknown");            
+    }
+}
+
+/********************************
+* CORE CONNECTION STATE HANDLING
+*********************************/
+
+// PUTS THE WHOLE UI INTO INCOMPATIBLE STATE
+function setStateIncompatible() {
+    spinnerShouldShow = false;
+    // STATUS
+    toggleClassForElementWithIdTo('status',"statusyellow");
+    document.getElementById('status').innerHTML = '(Incompatible)';
+    // HELP TEXT
+    document.getElementById('help').innerHTML = 'Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.';
+    // BUTTON
+    toggleClassForElementWithIdTo('connect',"unconnectable");
+    document.getElementById('connect').innerHTML = 'Connections via USB not supported by this Browser!';
+    // DEVICE
+    toggleClassForElementWithIdTo("devicename","devicenameunknown");
+    document.getElementById('devicename').innerHTML = "Unknown device";
+    if( portScanTimer ) {
+        clearInterval(portScanTimer);
+        portScanTimer = null;
+    }    
+}
+
+// PUTS THE WHOLE UI INTO DISCONNECTED STATE
+function setStateToDisconnected() {
+    spinnerShouldShow = false;
+    // STATUS
+    toggleClassForElementWithIdTo('status', "statusred");
+    document.getElementById('status').innerHTML = '(Disconnected)';
+    // BUTTON
+    toggleClassForElementWithIdTo('connect',"disconnected");
+    document.getElementById('connect').innerHTML = 'Connect via USB ...';
+    // DISCONNECT BUTTON
+    toggleClassForElementWithIdTo('disconnectbutton',"disconnectbuttonhidden");
+    disconnectbutton
+    // DEVICE
+    toggleClassForElementWithIdTo("devicename","devicenameunknown");
+    document.getElementById('devicename').innerHTML = "Unknown device";
+    if( portScanTimer ) {
+        clearInterval(portScanTimer);
+        portScanTimer = null;
+    }    
+}
+
+// PUTS THE WHOLE UI INTO CONNECTED STATE
+function setStateToConnected() {
+    spinnerShouldShow = false;
+    // STATUS
+    toggleClassForElementWithIdTo('status',"statusgreen");
+    document.getElementById('status').innerHTML = '(Connected)';
+    // BUTTON
+    toggleClassForElementWithIdTo('connect',"connected" );
+    document.getElementById('connect').innerHTML = 'Connected via USB';
+    // DISCONNECT BUTTON
+    toggleClassForElementWithIdTo('disconnectbutton',"disconnectbutton");
+    // DEVICE
+    setStateForDeviceName();
+    if( portScanTimer == null ) {
+        portScanTimer = setInterval( portsCheck, TIMEINTERVAL_PORTS );        
+    }    
+}
+
+// CHECKS IF THE BROWSER SUPPORTS WEB SERIAL API
 function isBrowserCompatible() {
     try {
         if( navigator && "serial" in navigator ) {
@@ -688,23 +726,6 @@ function isBrowserCompatible() {
             return false;
         }
     }
-    catch( error ) {
-        console.error( error );
-        return false;
-    }
-}
-
-async function hasAlreadyWorkingPort() {
-    try {
-        ports = await navigator.serial.getPorts();    
-        accessiblePort = ports[0];
-        if( accessiblePort != null && accessiblePort.connected && accessiblePort.readable ) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    } 
     catch( error ) {
         console.error( error );
         return false;
@@ -723,7 +744,7 @@ document.getElementById('connect').addEventListener('click', async () => {
     // CHECK IF WE ARE ALREADY CONNECTED FIRST...
     if( hasAlreadyWorkingPort() ) {
         port = getAvailablePort();
-        // RE-READ INFOS FROm DEVICE INSTEAD
+        // RE-READ INFOS FROM DEVICE INSTEAD
         reconnectToDevice();
     }
     // REQUEST A PORT AND OPEN THE CONNECTION

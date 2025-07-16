@@ -489,6 +489,8 @@ async function disconnectFromDevice() {
         catch (error) {
             console.error( error );    
         }
+        spinnerShouldShow = false;
+        spinnerCheck();
     }
 }
 
@@ -772,12 +774,6 @@ buildDocument();
 
 // ATTACH CLICK LISTENER TO CONNECT-BUTTON
 document.getElementById('connect').addEventListener('click', async () => {
-    // CHECK IF WE ARE ALREADY CONNECTED FIRST...
-    if( hasAlreadyWorkingPort() ) {
-        port = getAvailablePort();
-        // RE-READ INFOS FROM DEVICE INSTEAD
-        reconnectToDevice();
-    }
     // REQUEST A PORT AND OPEN THE CONNECTION
     try {
         // REQUEST PORT IF WE HAVE NO PERMISSION TO A PORT YET (BROWSER WILL PRESENT LIST To SELECT FROM)
@@ -787,8 +783,10 @@ document.getElementById('connect').addEventListener('click', async () => {
         reconnectToDevice();
     }
     catch( error ) { // USER DID NOT PICK A PORT, NOTHING TO DO
-        if( hasAlreadyWorkingPort() ) { // DISCONNECT MANUALLY
-            // 
+        if( hasAlreadyWorkingPort() ) { // CHECK IF WE ARE ALREADY A PORT WITH PERMISSION
+            port = getAvailablePort();
+            // RE-READ INFOS FROM DEVICE INSTEAD
+            reconnectToDevice();
         }
         else {
             console.error( error );

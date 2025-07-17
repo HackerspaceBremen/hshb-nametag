@@ -28,14 +28,14 @@ jobs:
           done
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hshb-nametag hex files
           path: |
             hshb-nametag-*.hex
       - name: Upload release
         if: ${{ github.event_name == 'release' }}
-        uses: alexellis/upload-assets@0.4.0
+        uses: alexellis/upload-assets@0.4.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:

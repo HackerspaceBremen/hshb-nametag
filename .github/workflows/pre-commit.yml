@@ -14,4 +14,4 @@ jobs:
       - name: Install dependencies
         run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@latest
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1

@@ -40,6 +40,6 @@ $ pio device monitor
 
 ## Web configurator
 
-You can use the [WebConfigurator](/webconfigurator/index.html) locally on your computer to configure your tag. Just connect it to USB and open the webpage in a browser that supports USB-Serial connections.
+You can use the [WebConfigurator](https://hackerspacebremen.github.io/hshb-nametag/) locally on your computer to configure your tag. Just connect it to USB and open the webpage in a browser that supports USB-Serial connections.
 
 ![](images/screenshot.png)

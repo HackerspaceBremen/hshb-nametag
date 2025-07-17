@@ -49,6 +49,36 @@ h1 {
     letter-spacing: 0.2em;
 }
 
+.download {
+    text-decoration: none;
+    display:inline;
+    appearance: none;
+    font-weight: bold;
+    font-size: 12px;;
+	background-color:#000000;
+	background-image: linear-gradient(to right, #5f5f5f, #191919);
+    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.226);
+    border-radius: 4px;
+    padding:5px 15px;
+    cursor: pointer;
+}
+
+.downloadhidden {
+    text-decoration: none;
+    display:none;
+    appearance: none;
+    font-weight: bold;
+    font-size: 12px;;
+	background-color:#000000;
+	background-image: linear-gradient(to right, #5f5f5f, #191919);
+    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.226);
+    border-radius: 4px;
+    padding:5px 15px;
+    cursor: pointer;
+}
+
 .alert {
     font-size: x-large;
     letter-spacing: 0.2em;

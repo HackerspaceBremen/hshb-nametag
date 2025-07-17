@@ -14,6 +14,9 @@
     </div>
     <div class="attention"></div>
     <div class="content" style="margin-bottom:20px;">
+        <strong>Configuration:</strong> <span id="setselector"></span>&nbsp;<a id='download' download="configuration.json" class="downloadhidden">Download</a>
+    </div>
+    <div class="content" style="margin-bottom:20px;">
         <button onclick="askWriteAllSlots()" class="writeallslots">Send all slots...</button>
         <span id="help" class="help">Please connect your badge via USB cable to the computer. Then click the "Connect via USB"-button to start interaction with the badge. It should automatically load the configured Slots.</span>
     </div>
@@ -22,8 +25,8 @@
     </div>
     <br clear="all">
     <div class="attention"></div>
-    <div class="version">Name Tag Configurator — Version 1.7 — <a href="https://phino.eu/nametag/">see online</a></div>
-     <div id="alert" class="alert">ERROR<div id="alertcontent" class="alertcontent">SENDING TO DEVICE FAILED.<br><br><code>W 0 2 15 1 0 1 4 blazr</code><br><br>NOT SENT, LOST CONNECTION.</div><span class="alertok" onclick="alertClose()">&nbsp;OK&nbsp;</span></div>
+    <div class="version">Name Tag Configurator — Version 1.8 — <a href="https://phino.eu/nametag/">see online</a></div>
+     <div id="alert" class="alert">ERROR<div id="alertcontent" class="alertcontent"></div><span class="alertok" onclick="alertClose()">&nbsp;OK&nbsp;</span></div>
     <script src="main.js"></script>
 </body>
 </html>

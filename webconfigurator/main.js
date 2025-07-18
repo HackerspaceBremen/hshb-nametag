@@ -279,7 +279,7 @@ function hasTouchedOrChangedTheConfigurationData() {
     clearTimeout(prepareDownloadTimer);
   }
   prepareDownloadTimer = setTimeout(
-    prepareDownload,
+    configurationSynchronize,
     TIMEINTERVAL_WAIT_FOR_DOWNLOAD
   );
   toggleClassForElementWithIdTo("download", "downloadhidden");

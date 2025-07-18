@@ -458,6 +458,7 @@ function loadDeviceSetIntoUI(deviceconfiguration) {
       // SET SELECT-OPTION_VALUES
       document.getElementById(`textType-${i}`).value = slot.textTypeId;
       document.getElementById(`animation-${i}`).value = slot.animationId;
+      setTextOptionsForSlot(i);
       spinnerShouldShow = false;
     }
   }, "3000");

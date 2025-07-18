@@ -121,15 +121,17 @@ DeviceSet.fromJSON = function (json) {
 // CLASS DEFINING ONE SLOT
 class DeviceSlot {
   // CLASS CONSTANTS DEFINING VALUE LIMITS
-  static maxTextLength = 75;
-  static minOffsetX = 0;
-  static maxOffsetX = 255;
-  static minCharSpace = 0;
-  static maxCharSpace = 60;
-  static minCharScale = 1;
-  static maxCharScale = 5;
-  static minDuration = 1;
-  static maxDuration = 5;
+  static MAX_NUM_TEXT_TYPE_IDS = 3;
+  static MAX_NUM_ANIMATION_IDS = 10;
+  static MAX_TEXT_LENGTH = 75;
+  static MIN_OFFSET_X = 0;
+  static MAX_OFFSET_X = 255;
+  static MIN_CHAR_SPACE = 0;
+  static MAX_CHAR_SPACE = 60;
+  static MIN_CHAR_SCALE = 1;
+  static MAX_CHAR_SCALE = 5;
+  static MIN_DURATION = 1;
+  static MAX_DURATION = 60;
 
   constructor(
     slotId,
@@ -185,60 +187,38 @@ class DeviceSlot {
     html += `<div id="slot-content-${i}" style="display:none">`;
     html += `<fieldset><legend>Movement, spacing & character width</legend>`;
     html += `<label for="textType-${i}">Type</label>`;
-    html += `<select id="textType-${i}" value="${this.textType}" onChange="setTextOptionsForSlot(${i});dirty();">`;
-    html += `<option value="0" ${this.selectedTextTypeForId(0)}>None</option>`;
-    html += `<option value="1" ${this.selectedTextTypeForId(
-      1
-    )}>Static</option>`;
-    html += `<option value="2" ${this.selectedTextTypeForId(
-      2
-    )}>Scrolling</option>`;
+    html += `<select id="textType-${i}" onChange="setTextOptionsForSlot(${i});dirty();">`;
+    html += `<option id="textTypeOption-${i}-0" value="0">None</option>`;
+    html += `<option id="textTypeOption-${i}-1" value="1">Static</option>`;
+    html += `<option id="textTypeOption-${i}-2" value="2">Scrolling</option>`;
     html += `</select>`;
     html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>`;
-    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${DeviceSlot.minOffsetX}" max="${DeviceSlot.maxOffsetX}" value="${this.xOffset}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${DeviceSlot.MIN_OFFSET_X}" max="${DeviceSlot.MAX_OFFSET_X}" value="${this.xOffset}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-space-${i}">Char Space</label>`;
-    html += `<input type="number" class="numInput" id="char-space-${i}" min="${DeviceSlot.minCharSpace}" max="${DeviceSlot.maxCharSpace}" value="${this.charSpace}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="char-space-${i}" min="${DeviceSlot.MIN_CHAR_SPACE}" max="${DeviceSlot.MAX_CHAR_SPACE}" value="${this.charSpace}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-scaler-${i}">Char Scaler</label>`;
-    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${DeviceSlot.minCharScale}" max="${DeviceSlot.maxCharScale}" value="${this.charScale}" onchange="dirty();">`;
+    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${DeviceSlot.MIN_CHAR_SCALE}" max="${DeviceSlot.MAX_CHAR_SCALE}" value="${this.charScale}" onchange="dirty();">`;
     html += `</fieldset>`;
     html += `<div id="text-options-${i}">`;
-    html += `<fieldset><legend id="scrolltextinfo-${i}">Text for display (can be up to ${DeviceSlot.maxTextLength} chars...)</legend>`;
-    html += `<input type="text" id="text-${i}" size="${DeviceSlot.maxTextLength}" maxlength="${DeviceSlot.maxTextLength}" value="${this.text}" placeholder="Text to display goes here..." oninput="dirty();showRemainingChars(${i});">`;
+    html += `<fieldset><legend id="scrolltextinfo-${i}">Text for display (can be up to ${DeviceSlot.MAX_TEXT_LENGTH} chars...)</legend>`;
+    html += `<input type="text" id="text-${i}" size="${DeviceSlot.MAX_TEXT_LENGTH}" maxlength="${DeviceSlot.MAX_TEXT_LENGTH}" value="${this.text}" placeholder="Text to display goes here..." oninput="dirty();showRemainingChars(${i});">`;
     html += `</fieldset>`;
     html += `</div>`;
     html += `<fieldset><legend>Animation options</legend>`;
     html += `<label id="duration-label-${i}" for="duration-${i}">Duration seconds</label>`;
-    html += `<input type="number" class="numInput" id="duration-${i}" min="${DeviceSlot.minDuration}" max="${DeviceSlot.maxDuration}" value="${this.duration}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="duration-${i}" min="${DeviceSlot.MIN_DURATION}" max="${DeviceSlot.MAX_DURATION}" value="${this.duration}" onchange="dirty();"> `;
     html += `&nbsp;<label for="animation-${i}">Animation</label>`;
     html += `<select id="animation-${i}" onchange="dirty();">`;
-    html += `<option value="0" ${this.selectedAnimationForId(
-      0
-    )}>Static Off</option>`;
-    html += `<option value="1" ${this.selectedAnimationForId(
-      1
-    )}>Static On</option>`;
-    html += `<option value="2" ${this.selectedAnimationForId(
-      2
-    )}>Matrix</option>`;
-    html += `<option value="3" ${this.selectedAnimationForId(
-      3
-    )}>Sweep</option>`;
-    html += `<option value="4" ${this.selectedAnimationForId(4)}>Wave</option>`;
-    html += `<option value="5" ${this.selectedAnimationForId(
-      5
-    )}>Lines</option>`;
-    html += `<option value="6" ${this.selectedAnimationForId(
-      6
-    )}>Lines Fill</option>`;
-    html += `<option value="7" ${this.selectedAnimationForId(
-      7
-    )}>Rotate</option>`;
-    html += `<option value="8" ${this.selectedAnimationForId(
-      8
-    )}>Rotate Fill</option>`;
-    html += `<option value="9" ${this.selectedAnimationForId(
-      9
-    )}>Circles</option>`;
+    html += `<option id="animationOption-${i}-0" value="0">Static Off</option>`;
+    html += `<option id="animationOption-${i}-1" value="1">Static On</option>`;
+    html += `<option id="animationOption-${i}-2" value="2">Matrix</option>`;
+    html += `<option id="animationOption-${i}-3" value="3">Sweep</option>`;
+    html += `<option id="animationOption-${i}-4" value="4">Wave</option>`;
+    html += `<option id="animationOption-${i}-5" value="5">Lines</option>`;
+    html += `<option id="animationOption-${i}-6" value="6">Lines Fill</option>`;
+    html += `<option id="animationOption-${i}-7" value="7">Rotate</option>`;
+    html += `<option id="animationOption-${i}-8" value="8">Rotate Fill</option>`;
+    html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;
@@ -323,10 +303,10 @@ function escapeHtml(unsafe) {
 function showRemainingChars(slotId) {
   let textField = document.getElementById("text-" + slotId);
   let textInfo = document.getElementById("scrolltextinfo-" + slotId);
-  let charsRemaining = DeviceSlot.maxTextLength - textField.value.length;
+  let charsRemaining = DeviceSlot.MAX_TEXT_LENGTH - textField.value.length;
   textInfo.textContent =
     "Text for display (can be up to " +
-    DeviceSlot.maxTextLength +
+    DeviceSlot.MAX_TEXT_LENGTH +
     " chars... " +
     charsRemaining +
     " remaining)";
@@ -475,6 +455,9 @@ function loadDeviceSetIntoUI(deviceconfiguration) {
       let slot = defaultSet().slotWithIndex(i);
       document.getElementById("active-" + i).checked = slot.active;
       setSlotVisibility(i);
+      // SET SELECT-OPTION_VALUES
+      document.getElementById(`textType-${i}`).value = slot.textTypeId;
+      document.getElementById(`animation-${i}`).value = slot.animationId;
       spinnerShouldShow = false;
     }
   }, "3000");
@@ -485,13 +468,12 @@ async function configurationSynchronize() {
   let slotsToSync = defaultSet().getSlots();
   for (let i = 0; i < slotsToSync.length; i++) {
     let slot = slotsToSync[i];
-    slot.textType = Number(document.getElementById("textType-" + i).value);
+    slot.textTypeId = Number(document.getElementById(`textType-${i}`).value);
+    slot.animationId = Number(document.getElementById(`animation-${i}`).value);
+
     slot.text = document.getElementById("text-" + i).value;
-    slot.animationId = Number(document.getElementById("animation-" + i).value);
     slot.duration = Number(document.getElementById("duration-" + i).value);
-    slot.xOffset = Number(
-      document.getElementById("offset-interval-" + i).value
-    );
+    slot.xOffset = Number(document.getElementById("offset-interval-" + i).value);
     slot.charScale = Number(document.getElementById("char-scaler-" + i).value);
     slot.charSpace = Number(document.getElementById("char-space-" + i).value);
     slot.active = document.getElementById("active-" + i).checked;
@@ -829,7 +811,8 @@ function receiveUART(msg) {
         document.getElementById("textType-" + slot).value = 0;
         document.getElementById("animation-" + slot).value = dat[0];
         document.getElementById("duration-" + slot).value = dat[1];
-      } else {
+      }
+      else {
         document.getElementById("text-" + slot).value = slotText;
         document.getElementById("animation-" + slot).value = dat[1];
         document.getElementById("duration-" + slot).value = dat[2];

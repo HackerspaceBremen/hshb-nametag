@@ -459,6 +459,7 @@ function loadDeviceSetIntoUI(deviceconfiguration) {
       document.getElementById(`textType-${i}`).value = slot.textTypeId;
       document.getElementById(`animation-${i}`).value = slot.animationId;
       setTextOptionsForSlot(i);
+      showRemainingChars(i);
       spinnerShouldShow = false;
     }
   }, "3000");
@@ -655,7 +656,6 @@ function writeAllSlots() {
 function writeSlot(slt) {
   if (port == null) return;
   spinnerShouldShow = true;
-  toggleClassForElementWithIdTo(`slot-name-${slt + 1}`, "blink");
   if (document.getElementById("active-" + slt).checked) {
     // WRITE THIS SLOT
     cmd = "W " + slt + " ";
@@ -676,6 +676,7 @@ function writeSlot(slt) {
     writingSlot++;
     // launch delayed next write
     setTimeout(() => {
+      toggleClassForElementWithIdTo(`slot-name-${writingSlot}`, "blink");
       writeSlot(writingSlot);
     }, "2000");
   } else {
@@ -688,7 +689,9 @@ function writeSlot(slt) {
 
 // SHOW AND HIDE SMALL GREEN CHECKMARK
 function writeConfirmation(slt) {
-  scrollToElementWithId(`slot-name-${slt + 1}`);
+  if( writingData ) {
+    scrollToElementWithId(`slot-name-${slt + 1}`);
+  }
 
   document.getElementById("writeConfirm-" + slt).classList.remove("hidden");
   setTimeout(() => {
@@ -825,6 +828,7 @@ function receiveUART(msg) {
       document.getElementById("active-" + slot).checked = true;
       setSlotVisibility(slot);
       setTextOptionsForSlot(slot);
+      showRemainingChars(slot);
     } else if (msg.includes("not active")) {
       document.getElementById("active-" + slot).checked = false;
       setSlotVisibility(slot);

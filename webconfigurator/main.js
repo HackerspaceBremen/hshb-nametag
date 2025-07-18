@@ -2,10 +2,12 @@
 const TIMEOUT_NO_MORE_DATA_EXPECTED = 50; // millis
 const TIMEINTERVAL_SPINNER = 100; // millis
 const TIMEINTERVAL_PORTS = 10000; // millis
+const TIMEINTERVAL_WAIT_FOR_DOWNLOAD = 2000; // millis
 const MAX_NUM_SLOTS = 10;
 const BAUD_RATE = 9600;
 let openPortCheckTimer = null;
 let spinnerCheckTimer = null;
+let prepareDownloadTimer = null;
 let spinnerShouldShow = false;
 let gettingData = false;
 let gettingSlot = 0;
@@ -17,34 +19,68 @@ let reader = null;
 let readableStreamClosed = null;
 let readerAborter = null;
 let writer = null;
-let messageBuffer = "";
+let messageBuffer = '';
 let timeoutId = null;
-const slotsContainer = document.getElementById("slots");
 let defaultDeviceConfigurationSet = null;
+let shouldPrepareDownloadAfterChange = false;
+
+const slotsContainer = document.getElementById('slots');
+const inputElement = document.getElementById("fileinput");
+inputElement.addEventListener("change", checkFiles, false); // NEEDED FOR CONFIG IMPORT
 
 /********************************
- * PLANNED FEATURES / FUTURE
- *********************************/
+* PLANNED FEATURES / FUTURE
+*********************************/
 /*
 
 - export setup as JSON [DONE]
-- save a setup of all slots under a NAME in localStorage
-- retrieve a setup and send to device
-- import setup from JSON/file etc.
+- save a setup of all slots under a NAME in localStorage [CANCELLED]
+- save a setup of all slots as a local file which can be shared easily [DONE]
+- load/import a setup to send it to device [DONE]
+- import setup from JSON/file etc. [DONE]
 - simulated effects-preview for the slots configured
 
 */
 
+
+/********************************
+* CONFIGURATION DATA MODEL CLASSES
+*********************************/
+
+// CARRIES META DATA ABOUT FILE FORMAT VERSION
+class DeviceSetMeta {
+  // METADATA FOR FILE FORMAT
+  static VERSION = "1.9";
+  FILE_VERSION = DeviceSetMeta.VERSION;
+  AUTHOR = "blazr";
+  DEVICE = "HSHB LED Tag";
+  DATECREATED = new Date();
+  DATECHANGED = null;
+
+  constructor(FILE_VERSION, AUTHOR, DEVICE, DATECREATED, DATECHANGED) {
+    this.FILE_VERSION = FILE_VERSION;
+    this.AUTHOR = AUTHOR;
+    this.DEVICE = DEVICE;
+    this.DATECREATED = DATECREATED;
+    this.DATECHANGED = DATECHANGED;
+  }
+}
+
 // CLASS DEFINING AN EFFECT SETUP
 class DeviceSet {
+
+  META = null;
+
   constructor(displayName, uniqueIdentifier) {
     this.displayName = displayName;
     if (uniqueIdentifier == null) {
       this.uniqueIdentifier = self.crypto.randomUUID();
-    } else {
+    }
+    else {
       this.uniqueIdentifier = uniqueIdentifier;
     }
     this.slots = [];
+    this.META = new DeviceSetMeta();
   }
 
   json() {
@@ -68,28 +104,34 @@ class DeviceSet {
   }
 }
 
+// CLASS FUNCTION TO DESERIALIZE A NEW SETUP FROm JSON
+DeviceSet.fromJSON = function (json) {
+  let deviceSet = new DeviceSet(json.displayName, json.uniqueIdentifier);
+  deviceSet.META = new DeviceSetMeta(json.META.FILE_VERSION, json.META.AUTHOR, json.META.DEVICE, json.META.DATECREATED, json.META.DATECHANGED);
+  json.slots.forEach((slot, i) => {
+    // console.warn( ""+slot );
+    let slotToAdd = DeviceSlot.fromJSON(slot);
+    // slotToAdd.debug();
+    deviceSet.addSlot(slotToAdd);
+  });
+  return deviceSet;
+}
+
+
 // CLASS DEFINING ONE SLOT
 class DeviceSlot {
-  // CLASS CONSTANTS
-  minOffsetX = 0;
-  maxOffsetX = 255;
-  minCharSpace = 0;
-  maxCharSpace = 60;
-  minCharScale = 1;
-  maxCharScale = 5;
-  minDuration = 1;
-  maxDuration = 5;
+  // CLASS CONSTANTS DEFINING VALUE LIMITS
+  static maxTextLength = 75;
+  static minOffsetX = 0;
+  static maxOffsetX = 255;
+  static minCharSpace = 0;
+  static maxCharSpace = 60;
+  static minCharScale = 1;
+  static maxCharScale = 5;
+  static minDuration = 1;
+  static maxDuration = 5;
 
-  constructor(
-    slotId,
-    textTypeId,
-    xOffset,
-    charSpace,
-    charScale,
-    text,
-    duration,
-    animationId,
-  ) {
+  constructor(slotId, textTypeId, xOffset, charSpace, charScale, text, duration, animationId, active) {
     this.slotId = slotId;
     this.textTypeId = textTypeId;
     this.xOffset = xOffset;
@@ -98,7 +140,7 @@ class DeviceSlot {
     this.text = text;
     this.duration = duration;
     this.animationId = animationId;
-    this.active = false;
+    this.active = active;
   }
 
   debug() {
@@ -111,7 +153,8 @@ class DeviceSlot {
   selectedTextTypeForId(optionId) {
     if (this.textTypeId == optionId) {
       return "selected";
-    } else {
+    }
+    else {
       return "";
     }
   }
@@ -119,42 +162,43 @@ class DeviceSlot {
   selectedAnimationForId(animationId) {
     if (this.animationId == animationId) {
       return "selected";
-    } else {
+    }
+    else {
       return "";
     }
   }
 
   htmlDiv() {
     let i = this.slotId;
-    const slotDiv = document.createElement("div");
-    slotDiv.className = "slot";
+    const slotDiv = document.createElement('div');
+    slotDiv.className = 'slot';
     let html = "";
     html += `<h3 style="display:inline"><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
     html += `<div id="slot-content-${i}" style="display:none">`;
     html += `<fieldset><legend>Movement, spacing & character width</legend>`;
     html += `<label for="textType-${i}">Type</label>`;
-    html += `<select id="textType-${i}" value="${this.textType}" onChange="setTextOptionsForSlot(${i})">`;
+    html += `<select id="textType-${i}" value="${this.textType}" onChange="setTextOptionsForSlot(${i});dirty();">`;
     html += `<option value="0" ${this.selectedTextTypeForId(0)}>None</option>`;
     html += `<option value="1" ${this.selectedTextTypeForId(1)}>Static</option>`;
     html += `<option value="2" ${this.selectedTextTypeForId(2)}>Scrolling</option>`;
     html += `</select>`;
     html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>`;
-    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${this.minOffsetX}" max="${this.maxOffsetX}" value="${this.xOffset}"> `;
+    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${this.minOffsetX}" max="${this.maxOffsetX}" value="${this.xOffset}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-space-${i}">Char Space</label>`;
-    html += `<input type="number" class="numInput" id="char-space-${i}" min="${this.minCharSpace}" max="${this.maxCharSpace}" value="${this.charSpace}"> `;
+    html += `<input type="number" class="numInput" id="char-space-${i}" min="${this.minCharSpace}" max="${this.maxCharSpace}" value="${this.charSpace}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-scaler-${i}">Char Scaler</label>`;
-    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${this.minCharScale}" max="${this.maxCharScale}" value="${this.charScale}">`;
+    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${this.minCharScale}" max="${this.maxCharScale}" value="${this.charScale}" onchange="dirty();">`;
     html += `</fieldset>`;
     html += `<div id="text-options-${i}">`;
-    html += `<fieldset><legend>Text for display (can be up to 75 chars...)</legend>`;
-    html += `<input type="text" id="text-${i}" size="75" maxlength="75" value="${this.text}" placeholder="Text to display goes here...">`;
+    html += `<fieldset><legend id="scrolltextinfo-${i}">Text for display (can be up to ${DeviceSlot.maxTextLength} chars...)</legend>`;
+    html += `<input type="text" id="text-${i}" size="${DeviceSlot.maxTextLength}" maxlength="${DeviceSlot.maxTextLength}" value="${this.text}" placeholder="Text to display goes here..." oninput="dirty();showRemainingChars(${i});">`;
     html += `</fieldset>`;
     html += `</div>`;
     html += `<fieldset><legend>Animation options</legend>`;
     html += `<label id="duration-label-${i}" for="duration-${i}">Duration seconds</label>`;
-    html += `<input type="number" class="numInput" id="duration-${i}" min="${this.minDuration}" max="${this.maxnDuration}" value="${this.duration}"> `;
+    html += `<input type="number" class="numInput" id="duration-${i}" min="${this.minDuration}" max="${this.maxDuration}" value="${this.duration}" onchange="dirty();"> `;
     html += `&nbsp;<label for="animation-${i}">Animation</label>`;
-    html += `<select id="animation-${i}">`;
+    html += `<select id="animation-${i}" onchange="dirty();">`;
     html += `<option value="0" ${this.selectedAnimationForId(0)}>Static Off</option>`;
     html += `<option value="1" ${this.selectedAnimationForId(1)}>Static On</option>`;
     html += `<option value="2" ${this.selectedAnimationForId(2)}>Matrix</option>`;
@@ -172,76 +216,215 @@ class DeviceSlot {
   }
 }
 
-// GET THE DEFAULT DEVICE CONFIG SET
+// CLASS FUNCTION TO DESERIALIZE A NEW SLOT FROM JSON
+DeviceSlot.fromJSON = function (json) {
+  return new DeviceSlot(json.slotId, json.textTypeId, json.xOffset, json.charSpace, json.charScale, json.text, json.duration, json.animationId, json.active);
+}
+
+/********************************
+* CONFIGURATION SETUP HANDLING
+*********************************/
+
+// GET THE CURRENT ACTIVE DEVICE CONFIG
 function defaultSet() {
   if (defaultDeviceConfigurationSet == null) {
     defaultDeviceConfigurationSet = new DeviceSet("Default", null);
     for (let i = 0; i < MAX_NUM_SLOTS; i++) {
-      let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1);
+      let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1, false);
       defaultDeviceConfigurationSet.addSlot(currentSlot);
     }
   }
   return defaultDeviceConfigurationSet;
 }
 
+function editConfigName() {
+  let placeholder = defaultSet().displayName;
+  let configName = prompt("Please enter a name for your configuration set", placeholder);
+  if (configName != null) {
+    defaultSet().displayName = configName;
+    hasTouchedOrChangedTheConfigurationData();
+    document.getElementById("setselector").textContent = defaultSet().displayName;
+  }
+  else {
+    // do nothing
+  }
+}
+
+// MARKS CONFIGURATION AS DIRTY, WE NED TO PREPARE NEW CONFIG DOWNLOAD
+function hasTouchedOrChangedTheConfigurationData() {
+  if (prepareDownloadTimer) {
+    clearTimeout(prepareDownloadTimer);
+  }
+  prepareDownloadTimer = setTimeout(prepareDownload, TIMEINTERVAL_WAIT_FOR_DOWNLOAD);
+  toggleClassForElementWithIdTo('download', 'downloadhidden');
+}
+
+// SHORTER NAME FOR HANDLERS
+function dirty() {
+  hasTouchedOrChangedTheConfigurationData();
+}
+
+
+function showRemainingChars(slotId) {
+  let textField = document.getElementById('text-' + slotId);
+  let textInfo = document.getElementById('scrolltextinfo-' + slotId);
+  let charsRemaining = DeviceSlot.maxTextLength - textField.value.length;
+  textInfo.textContent = "Text for display (can be up to " + DeviceSlot.maxTextLength + " chars... " + charsRemaining + " remaining)";
+}
+
+// TRANSFORM DATA INTO DATA-URL FOR DOWNLOAD FROM CURRENT CONFIG SET
 function prepareDownload() {
   const nowDate = new Date();
   const nowTime = nowDate.getTime();
   const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1}-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
-  const downloadButton = document.getElementById("download");
+  const downloadButton = document.getElementById('download');
+  defaultSet().META.DATECHANGED = nowDate;
   let dataToDownload = defaultSet().json();
-  downloadButton.href =
-    "data:application/octet-stream;base64," + btoa(dataToDownload);
+  downloadButton.href = 'data:application/octet-stream;base64,' + btoa(dataToDownload);
   downloadButton.download = "hshb-tag-configuration-" + formattedDate + ".json";
-  toggleClassForElementWithIdTo("download", "download");
+  toggleClassForElementWithIdTo('download', 'download');
 }
 
-// PULLS VALUES OUT OF SLOT FORMFIELDS
+// SHOW UPLOAD/IMPORT WINDOW
+function prepareUpload() {
+  document.getElementById("uploadwindow").style.display = "block";
+  document.getElementById("uploadStatus").innerHTML = "Please choose ond .json configuration file stored.";
+}
+
+// EXECUTED TO IMPORT A CONFIGURATION AS JSON
+async function checkFiles() {
+  let fileList = this.files;
+  if (fileList == null || fileList == undefined) return;
+  // console.log( "FILE: GOT LIST..." );
+  let numFiles = fileList.length;
+  // console.log( "FILE: "+numFiles+" FILES" );
+  let selectedFile = this.files[0];
+  // console.log( "FILE: "+selectedFile );
+  console.log("FILE NAME: " + selectedFile.name);
+  console.log("FILE SIZE: " + selectedFile.size);
+  console.log("FILE TYPE: " + selectedFile.type);
+  if (selectedFile.type == "application/json") { // PROCESS FILE
+    // Read the file
+    const reader = new FileReader();
+    reader.onload = () => {
+      let importedSet = null;
+      try {
+        importedJson = JSON.parse(reader.result);
+        importedSet = DeviceSet.fromJSON(importedJson);
+      }
+      catch (error) {
+        let detectedFileVersion = null;
+        try {
+          if ("META" in importedJson) {
+            if ("FILE_VERSION" in importedJson.META) {
+              detectedFileVersion = importedJson.META.FILE_VERSION;
+            }
+          }
+        }
+        catch (error) {
+          // do nothing
+        }
+        if (detectedFileVersion != null) {
+          document.getElementById('uploadStatus').textContent = "ERROR: Configuration file not readable.<br>Detected file format uses version " + detectedFileVersion + ", but this configurator is already on version " + DeviceSetMeta.VERSION + ". Maybe the format is incompatible."
+        }
+        else {
+          document.getElementById('uploadStatus').innerHTML = "ERROR: Configuration file not readable/parsable.<br><code>" + error + "</code>";
+        }
+        console.error(error);
+      }
+      if (importedSet != null) {
+        document.getElementById('uploadStatus').innerHTML = "Imported successfully.";
+        inputElement.value = null;
+        defaultDeviceConfigurationSet = importedSet;
+        document.getElementById("uploadwindow").style.display = 'none';
+        loadDeviceSetIntoUI(defaultSet());
+        prepareDownload();
+      }
+      else {
+        document.getElementById('uploadStatus').innerHTML = "Data was empty. Nothing imported!";
+      }
+    };
+    reader.onerror = () => {
+      document.getElementById('uploadStatus').textContent = "Error reading the file. Please try again.";
+    };
+    reader.readAsText(selectedFile);
+  }
+  else {
+    document.getElementById('uploadStatus').textContent = "Wrong file format! Please upload .json files only.";
+  }
+}
+
+// APPLIES AN IMPORTED SETUP TO THE USER INTERFACE
+function loadDeviceSetIntoUI(deviceconfiguration) {
+  document.getElementById("setselector").textContent = deviceconfiguration.displayName;
+  // ITERATE OVER ALL SLOTS AND APPLY VALUES TO UI
+  slotsContainer.innerHTML = "<h2 class='blink'>Importing, please wait ... </h2>";
+  spinnerShouldShow = true;
+  setTimeout(() => {
+    slotsContainer.innerHTML = "";
+    injectHtmlForSlotsToDOM();
+    // ADJUST VISIBILITY OF SLOTS
+    for (let i = 0; i < defaultSet().slots.length; i++) {
+      let slot = defaultSet().slotWithIndex(i);
+      document.getElementById("active-" + i).checked = slot.active;
+      setSlotVisibility(i);
+      spinnerShouldShow = false;
+    }
+  }, "3000");
+}
+
+// PULLS VALUES OUT OF SLOT FORMFIELDS TO STORE IN CONFIGURATION MODEL (CALLED AFTER ALL CHANGES TO SETUP)
 async function configurationSynchronize() {
   let slotsToSync = defaultSet().getSlots();
   for (let i = 0; i < slotsToSync.length; i++) {
     let slot = slotsToSync[i];
-    slot.textType = document.getElementById("textType-" + i).value;
+    slot.textType = Number(document.getElementById("textType-" + i).value);
     slot.text = document.getElementById("text-" + i).value;
-    slot.animationId = document.getElementById("animation-" + i).value;
-    slot.duration = document.getElementById("duration-" + i).value;
-    slot.xOffset = document.getElementById("offset-interval-" + i).value;
-    slot.charScale = document.getElementById("char-scaler-" + i).value;
-    slot.charSpace = document.getElementById("char-space-" + i).value;
+    slot.animationId = Number(document.getElementById("animation-" + i).value);
+    slot.duration = Number(document.getElementById("duration-" + i).value);
+    slot.xOffset = Number(document.getElementById("offset-interval-" + i).value);
+    slot.charScale = Number(document.getElementById("char-scaler-" + i).value);
+    slot.charSpace = Number(document.getElementById("char-space-" + i).value);
     slot.active = document.getElementById("active-" + i).checked;
     // slot.debug();
   }
-  // prepare button to download stuff
+  // UPDATE THE CONFIG DATA TO BE READY FOR DOWNLOAD
   prepareDownload();
 }
+
+/********************************
+* CREATE AND INJECT SOME HTML FOR PAGE
+*********************************/
+
 
 // BUILD DEFAULT CONFIG SET
 defaultSet();
 
 // BUILD DOM
-function appendHtmlForSlotsToDOM() {
-  document.getElementById("setselector").innerHTML =
-    defaultSet().displayName + " (" + defaultSet().numberOfSlots() + " slots)";
+function injectHtmlForSlotsToDOM() {
+  document.getElementById('setselector').innerHTML = defaultSet().displayName + " (" + defaultSet().numberOfSlots() + " slots)";
   for (let i = 0; i < MAX_NUM_SLOTS; i++) {
     let currentSlot = defaultSet().slotWithIndex(i);
     slotsContainer.appendChild(currentSlot.htmlDiv());
   }
 }
 
+// DERIVE THE VERION OF WEBCONFIGURATOR FROM DeviceSetMeta-CLASS PROPERTY
+document.getElementById('version').innerHTML = "Version " + DeviceSetMeta.VERSION;
+
 /********************************
- * GENERAL HELPER FUNCTIONS
- *********************************/
+* GENERAL HELPER FUNCTIONS
+*********************************/
 
 // SHOW AN ALERT MESSAGE
 function alertShowWithInnerHtml(htmlToPlace) {
-  document.getElementById("alertcontent").innerHTML = htmlToPlace;
-  document.getElementById("alert").style.display = "block";
+  document.getElementById('alertcontent').innerHTML = htmlToPlace;
+  document.getElementById('alert').style.display = 'block';
 }
 
 // DISMISS ALERT MESSAGE
-function alertClose() {
-  document.getElementById("alert").style.display = "none";
-  document.getElementById("alertcontent").innerHTML = "";
+function alertClose(element_id) {
+  document.getElementById(element_id).style.display = 'none';
 }
 
 // STORE A VALUE INTO PERSISTENT LOCAL STORE (COOKIES DON'T WORK IN LOCAL MODE)
@@ -251,8 +434,9 @@ function setLocalStore(cname, cvalue, shouldEncodeBase64) {
   if (shouldEncodeBase64) {
     encodedValue = btoa(cvalue);
     // console.log( "LOCAL STORE: WROTE (BASE64) ... "+encodedValue );
-  } else {
-    // console.log( "LOCAL STORE: WROTE ... "+encodedValue );
+  }
+  else {
+    // console.log( "LOCAL STORE: WROTE ... "+encodedValue );        
   }
   localStorage.setItem(cname, encodedValue);
 }
@@ -268,7 +452,8 @@ function getLocalStore(cname, shouldDecodeBase64) {
   if (shouldDecodeBase64) {
     // console.log( "LOCAL STORE: READ (BASE64) ... "+extractedBase64Value );
     return atob(extractedBase64Value);
-  } else {
+  }
+  else {
     // console.log( "LOCAL STORE: READ ... "+extractedBase64Value );
     return extractedBase64Value;
   }
@@ -276,12 +461,13 @@ function getLocalStore(cname, shouldDecodeBase64) {
 
 // CALL ANY FUNCTION WITH A HARD TINMEOUT LIMIT
 function withTimeout(promise, timeout) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout")), timeout),
-    ),
-  ]);
+  return Promise
+    .race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), timeout)
+      )
+    ]);
 }
 
 // SET CSS-STYLE-CLASS FOR AN ELEMENT WITH ID
@@ -292,7 +478,8 @@ function toggleClassForElementWithIdTo(element_id, className) {
     let classesToRemove = e.classList;
     e.classList.remove(classesToRemove);
     e.classList.add(className);
-  } else {
+  }
+  else {
     console.log("ERROR: ELEMENT FOR ID " + element_id + " NOT FOUND.");
   }
 }
@@ -300,32 +487,31 @@ function toggleClassForElementWithIdTo(element_id, className) {
 // UPDATES THE ACTIVITY SPINNER ACCORING TO CURRENT STATE (GETS CALLED VERY OFTEN)
 function spinnerCheck() {
   if (spinnerShouldShow) {
-    if ("spinnershow" == document.getElementById("spinner").classList) {
-      //console.log( "NOTHING TO DO SHOW" );
-    } else {
-      toggleClassForElementWithIdTo("spinner", "spinnershow");
+    if ("spinnershow" == document.getElementById('spinner').classList) {
+      //console.log( "NOTHING TO DO SHOW" );        
     }
-  } else {
-    if ("spinnerhide" == document.getElementById("spinner").classList) {
+    else {
+      toggleClassForElementWithIdTo('spinner', "spinnershow");
+    }
+  }
+  else {
+    if ("spinnerhide" == document.getElementById('spinner').classList) {
       //console.log( "NOTHING TO DO HIDE" );
-    } else {
-      toggleClassForElementWithIdTo("spinner", "spinnerhide");
+    }
+    else {
+      toggleClassForElementWithIdTo('spinner', "spinnerhide");
     }
   }
 }
 
 /********************************
- * HTML RELATED ACTIONS TRIGGERED VIA THE UI
- *********************************/
+* HTML RELATED ACTIONS TRIGGERED VIA THE UI
+*********************************/
 
 // USER WANTS ALL SLOTS TO BE WRITTEN TO DEVICE
 function askWriteAllSlots() {
   if (port == null) return;
-  if (
-    confirm(
-      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!",
-    )
-  ) {
+  if (confirm("Really write all slots now?\n\nWARNING: Inactive slots will be cleared!")) {
     writeAllSlots();
   }
 }
@@ -344,8 +530,7 @@ function writeAllSlots() {
 function writeSlot(slt) {
   if (port == null) return;
   spinnerShouldShow = true;
-  if (document.getElementById("active-" + slt).checked) {
-    // WRITE THIS SLOT
+  if (document.getElementById("active-" + slt).checked) { // WRITE THIS SLOT
     cmd = "W " + slt + " ";
     cmd += document.getElementById("animation-" + slt).value + " ";
     cmd += document.getElementById("duration-" + slt).value + " ";
@@ -355,8 +540,8 @@ function writeSlot(slt) {
     cmd += document.getElementById("char-space-" + slt).value + " ";
     cmd += document.getElementById("text-" + slt).value;
     sendUART(cmd + "\n");
-  } else {
-    // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
+  }
+  else { // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
     sendUART("D " + slt + "\n");
   }
   if (writingData && writingSlot < MAX_NUM_SLOTS - 1) {
@@ -366,8 +551,8 @@ function writeSlot(slt) {
     setTimeout(() => {
       writeSlot(writingSlot);
     }, "1000");
-  } else {
-    // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
+  }
+  else { // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
     writingData = false;
     spinnerShouldShow = false;
   }
@@ -376,22 +561,23 @@ function writeSlot(slt) {
 
 // SHOW AND HIDE SMALL GREEN CHECKMARK
 function writeConfirmation(slt) {
-  document.getElementById("writeConfirm-" + slt).classList.remove("hidden");
+  document.getElementById("writeConfirm-" + slt).classList.remove('hidden');
   setTimeout(() => {
-    document.getElementById("writeConfirm-" + slt).classList.add("hidden");
+    document.getElementById("writeConfirm-" + slt).classList.add('hidden');
   }, "1000");
 }
 
 // ** NOT USED **
 function deleteSlot(index) {
-  document.getElementById(`text-${index}`).value = "";
-  document.getElementById(`animation-${index}`).value = "none";
+  document.getElementById(`text-${index}`).value = '';
+  document.getElementById(`animation-${index}`).value = 'none';
   document.getElementById(`textType-${index}`).checked = false;
-  document.getElementById(`offset-interval-${index}`).value = "";
-  document.getElementById(`duration-${index}`).value = "";
-  document.getElementById(`x-offset-${index}`).value = "";
-  document.getElementById(`char-scaler-${index}`).value = "";
+  document.getElementById(`offset-interval-${index}`).value = '';
+  document.getElementById(`duration-${index}`).value = '';
+  document.getElementById(`x-offset-${index}`).value = '';
+  document.getElementById(`char-scaler-${index}`).value = '';
   document.getElementById(`active-${index}`).checked = false;
+  hasTouchedOrChangedTheConfigurationData();
 }
 
 // ADJUST HTML VISIBILITY FOR SLOT
@@ -400,27 +586,26 @@ function setSlotVisibility(slt) {
     document.getElementById("slot-content-" + slt).style = "";
     toggleClassForElementWithIdTo("send-button-" + slt, "writeslot");
     document.getElementById("send-button-" + slt).innerHTML = "Send slot...";
+
   } else {
     document.getElementById("slot-content-" + slt).style = "display:none";
     toggleClassForElementWithIdTo("send-button-" + slt, "writeslotred");
     document.getElementById("send-button-" + slt).innerHTML = "Clear slot...";
   }
+  hasTouchedOrChangedTheConfigurationData();
 }
 
 // ADJUST HTML FORM VALUES FOR SLOT
 function setTextOptionsForSlot(slt) {
   textType = document.getElementById("textType-" + slt).value;
   if (textType == 1) {
-    document.getElementById("duration-label-" + slt).innerHTML =
-      "Duration seconds:";
-    document.getElementById("offset-interval-label-" + slt).innerHTML =
-      "X Offset:";
+
+    document.getElementById("duration-label-" + slt).innerHTML = "Duration seconds:";
+    document.getElementById("offset-interval-label-" + slt).innerHTML = "X Offset:";
     document.getElementById("text-options-" + slt).style = "";
   } else if (textType == 2) {
-    document.getElementById("duration-label-" + slt).innerHTML =
-      "Scroll Cycles:";
-    document.getElementById("offset-interval-label-" + slt).innerHTML =
-      "Scroll Interval:";
+    document.getElementById("duration-label-" + slt).innerHTML = "Scroll Cycles:";
+    document.getElementById("offset-interval-label-" + slt).innerHTML = "Scroll Interval:";
     document.getElementById("text-options-" + slt).style = "";
   } else {
     document.getElementById("text-options-" + slt).style = "display:none";
@@ -428,25 +613,25 @@ function setTextOptionsForSlot(slt) {
 }
 
 /********************************
- * CORE DEVICE COMMUNICATION
- *********************************/
+* CORE DEVICE COMMUNICATION
+*********************************/
 
 // READLOOP WHICh RUNNS PERMANENTLY TO READ UNTIL TIMEOUT
 async function readLoop() {
   try {
     console.log("UART READING: WAITING FOR DATA ...");
-    while (true) {
-      // WILL READ AS LONG A NEW DATE IS COMING
+    while (true) { // WILL READ AS LONG A NEW DATE IS COMING
       const { value, done } = await reader.read().then();
       if (done) {
         reader.releaseLock();
         break;
       }
-      handleIncomingData(value);
+      handleIncomingData(value)
       console.log("UART READING: GOT DATA ...");
     }
     console.log("UART READING: EXIT/CANCELLING READLOOP");
-  } catch (error) {
+  }
+  catch (error) {
     console.error("READ LOOP: FAILED WITH ERROR\n" + error);
     reader = null;
     if (error.className == "NetworkError") {
@@ -464,11 +649,10 @@ async function handleIncomingData(data) {
     clearTimeout(timeoutId);
   }
   // Set a new timeout to process the message if no new data is received within timeout
-  timeoutId = setTimeout(() => {
-    // ASSUME IF AFTER TIMEOUT NO MORE DATA COMING IN THAT MESSAGE IS COMPLETE, SO PROCESS IT AND RESET BUFFER
+  timeoutId = setTimeout(() => { // ASSUME IF AFTER TIMEOUT NO MORE DATA COMING IN THAT MESSAGE IS COMPLETE, SO PROCESS IT AND RESET BUFFER
     spinnerShouldShow = false;
     processMessage(messageBuffer);
-    messageBuffer = ""; // Clear the buffer for the next message
+    messageBuffer = ''; // Clear the buffer for the next message
   }, TIMEOUT_NO_MORE_DATA_EXPECTED);
 }
 
@@ -485,14 +669,15 @@ function receiveUART(msg) {
     let slot = msg.charAt(5);
     if (msg.includes(":\r\n")) {
       let lines = msg.split("\r\n");
-      let dat = lines[1].split(" ");
+      let dat = lines[1].split(' ');
       let slotText = lines[2];
 
       if (dat.length < 7) {
         document.getElementById("textType-" + slot).value = 0;
         document.getElementById("animation-" + slot).value = dat[0];
         document.getElementById("duration-" + slot).value = dat[1];
-      } else {
+      }
+      else {
         document.getElementById("text-" + slot).value = slotText;
         document.getElementById("animation-" + slot).value = dat[1];
         document.getElementById("duration-" + slot).value = dat[2];
@@ -504,7 +689,8 @@ function receiveUART(msg) {
       document.getElementById("active-" + slot).checked = true;
       setSlotVisibility(slot);
       setTextOptionsForSlot(slot);
-    } else if (msg.includes("not active")) {
+    }
+    else if (msg.includes("not active")) {
       document.getElementById("active-" + slot).checked = false;
       setSlotVisibility(slot);
     }
@@ -517,7 +703,8 @@ function receiveUART(msg) {
     if (gettingSlot < MAX_NUM_SLOTS - 1) {
       gettingSlot++; // SEND COMMAND TO READ NEXT SLOT...
       sendUART("R " + gettingSlot + "\n");
-    } else {
+    }
+    else {
       gettingData = false;
     }
   }
@@ -534,20 +721,18 @@ async function sendUART(msg) {
       await writer.write(textEncoder.encode(msg));
       writer.releaseLock();
       console.log("UART SENDING: SUCCESS");
-    } catch (error) {
+    }
+    catch (error) {
       console.log("UART SENDING: ERROR\n" + error);
       writer = null;
       if (error.className == "NetworkError") {
         console.error("UART SENDING: (NetworkError)");
       }
-      alertShowWithInnerHtml(
-        "SENDING TO DEVICE FAILED.<br><br><code>" +
-          msg +
-          "</code><br><br>NOT SENT, LOST CONNECTION.",
-      );
+      alertShowWithInnerHtml("SENDING TO DEVICE FAILED.<br><br><code>" + msg + "</code><br><br>NOT SENT, LOST CONNECTION.");
     }
-  } else {
-    // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
+
+  }
+  else { // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
     setStateToDisconnected();
     // alertShowWithInnerHtml("Port is not open. Please connect to the port first.");
   }
@@ -563,8 +748,8 @@ function connectedUART() {
     gettingSlot = 0;
     try {
       sendUART("R 0\n");
-    } catch (error) {
-      // TIMEOUT WHILE TRYING TO GET ALL DATA
+    }
+    catch (error) { // TIMEOUT WHILE TRYING TO GET ALL DATA
       console.error(error);
       setStateToDisconnected(); // WE HAVE NO WORKINg COMMUNICATION, ASSUME DISCONNECTED
     }
@@ -572,8 +757,8 @@ function connectedUART() {
 }
 
 /********************************
- * SERIAL CONNECTION OPEN/CLOSE
- *********************************/
+* SERIAL CONNECTION OPEN/CLOSE
+*********************************/
 
 // IF THERE ARE ACCESSIBLE PORTS, IT RETURNS THE FIRST PORT FOUND
 async function getAvailablePort() {
@@ -591,7 +776,8 @@ async function getAvailablePort() {
   }
   if (portFound == null) {
     // console.log( "AVAILABLE PORT: NONE." );
-  } else {
+  }
+  else {
     console.log("AVAILABLE PORT: " + portFound);
   }
   return portFound;
@@ -602,16 +788,14 @@ async function hasAlreadyWorkingPort() {
   try {
     ports = await navigator.serial.getPorts();
     accessiblePort = ports[0];
-    if (
-      accessiblePort != null &&
-      accessiblePort.connected &&
-      accessiblePort.readable
-    ) {
+    if (accessiblePort != null && accessiblePort.connected && accessiblePort.readable) {
       return true;
-    } else {
+    }
+    else {
       return false;
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
     return false;
   }
@@ -635,7 +819,8 @@ async function disconnectFromDevice() {
       console.log("PORT: CLOSED.");
       port = null;
       setStateToDisconnected();
-    } catch (error) {
+    }
+    catch (error) {
       console.error(error);
     }
     spinnerShouldShow = false;
@@ -668,6 +853,7 @@ async function releaseAllLocks() {
         console.warn("WRITABLE LOCKED: " + port.writable.locked);
       }
 
+
       if (port.readable && port.readable.locked) {
         readerAborter.abort();
         reader.cancel();
@@ -684,88 +870,88 @@ async function releaseAllLocks() {
         console.info("WRITABLE LOCKED: " + port.writable.locked);
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
   }
 }
 
 // CHECKS IF WE HAVE A VALID PORT AND IF THE PORT IS PROPERLY ACESSIBLE (GETS CALLED A LOT)
 async function checkOpenPort() {
+  // CHECKS IF WE HAVE PENDING UPDATES TO THE CONFIGURATION
   accessiblePort = await getAvailablePort();
-  if (accessiblePort) {
-    // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
+  if (accessiblePort) { // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
     port = accessiblePort;
-    console.log(
-      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED"),
-    );
+    console.log("PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED"));
     console.log("PORT IS " + (accessiblePort.readable ? "OPEN" : "CLOSED"));
-    if (accessiblePort.connected) {
-      // IS AT LEAST CONNECTED, TRY READING...
+    if (accessiblePort.connected) { // IS AT LEAST CONNECTED, TRY READING...
       try {
-        if (!accessiblePort.readable) {
-          // NOT READABLE TRY CLOSE AND REOPENING
+        if (!accessiblePort.readable) { // NOT READABLE TRY CLOSE AND REOPENING
           // TRY RELEASING LOCKS
           await releaseAllLocks();
           // TRY OPENING DYSFUNCTIONAL PORT
           try {
             await accessiblePort.open({ baudRate: BAUD_RATE });
             const textDecoder = new TextDecoderStream();
-            readerAborter = new AbortController();
-            readableStreamClosed = accessiblePort.readable.pipeTo(
-              textDecoder.writable,
-              readerAborter,
-            );
+            readerAborter = new AbortController;
+            readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
             reader = textDecoder.readable.getReader();
             // LAUNCH READ LOOP...
             readLoop();
             // FETCH INFOS FROM TAG
             connectedUART();
-          } catch (error) {
-            console.error(error);
           }
-        } else {
-          // READABLE, ALL FINE DO NOTHING
+          catch (error) {
+            console.log(error);
+            let errorString = "" + error;
+            if (errorString.indexOf("NetworkError") > -1) {
+              alertShowWithInnerHtml("The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now.");
+            }
+          }
+        }
+        else { // READABLE, ALL FINE DO NOTHING
           // DO NOTHING
           port = accessiblePort;
         }
       } catch (error) {
         console.error(error);
       }
-    } else {
-      // NOT CONNECTED, TRY CONNECTION & READING
+    }
+    else { // NOT CONNECTED, TRY CONNECTION & READING
       try {
         // TRY RELEASING LOCKS
         await releaseAllLocks();
         await accessiblePort.open({ baudRate: BAUD_RATE });
         const textDecoder = new TextDecoderStream();
-        readerAborter = new AbortController();
-        readableStreamClosed = accessiblePort.readable.pipeTo(
-          textDecoder.writable,
-          readerAborter,
-        );
+        readerAborter = new AbortController;
+        readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
         reader = textDecoder.readable.getReader();
         // LAUNCH READ LOOP...
         readLoop();
         // FETCH INFOS FROM TAG
         connectedUART();
-      } catch (error) {
+      }
+      catch (error) {
         console.error(error);
       }
     }
-  } else {
+  }
+  else {
     if (hasAlreadyWorkingPort()) {
       port = await getAvailablePort();
       // RE-READ INFOS FROM DEVICE...
       reconnectToDevice();
-    } else {
+    }
+    else {
       console.log("NO DEVICE CONNECTED.");
     }
   }
 }
 
+
 /********************************
- * DEVICE NAME HANDLING
- *********************************/
+* DEVICE NAME HANDLING
+*********************************/
 
 // TRIES TO FIND STORED NAME FOR DEVICE WITH PRODUCT ID
 function getDeviceName() {
@@ -775,21 +961,19 @@ function getDeviceName() {
   let usbDeviceName = null;
   let isKnownDevice = false;
   let storedProductId = getLocalStore("usbProductId", false);
-  if ("" + usbProductId == "" + storedProductId) {
-    // ALREADY KNOWN PRODUCT
+  if ("" + usbProductId == "" + storedProductId) { // ALREADY KNOWN PRODUCT
     isKnownDevice = true;
     usbDeviceName = getLocalStore("knownDeviceName-" + usbProductId, true);
-  } else {
-    // STORE NEW INFO
+  }
+  else { // STORE NEW INFO
     isKnownDevice = false;
     setLocalStore("usbProductId", usbProductId, false);
   }
   let storedVendorId = getLocalStore("usbVendorId", false);
-  if ("" + usbVendorId == "" + storedVendorId) {
-    // ALREADY KNOWN VENDOR
+  if ("" + usbVendorId == "" + storedVendorId) { // ALREADY KNOWN VENDOR
     isKnownDevice = true;
-  } else {
-    // STORE NEW INFO
+  }
+  else { // STORE NEW INFO
     isKnownDevice = false;
     setLocalStore("usbVendorId", usbVendorId, false);
   }
@@ -804,14 +988,12 @@ function askForDevicename() {
   const { usbProductId } = port.getInfo();
   if (usbProductId != undefined) {
     let placeholder = deviceName ? deviceName : "HSHB Name Tag";
-    let usbDeviceName = prompt(
-      "Please enter a name for your device",
-      placeholder,
-    );
+    let usbDeviceName = prompt("Please enter a name for your device", placeholder);
     if (usbDeviceName != null) {
       if (usbDeviceName == "") {
         localStorage.removeItem("knownDeviceName-" + usbProductId);
-      } else {
+      }
+      else {
         setLocalStore("knownDeviceName-" + usbProductId, usbDeviceName, true);
       }
     }
@@ -823,41 +1005,41 @@ function askForDevicename() {
 function setStateForDeviceName() {
   let usbDeviceName = getDeviceName();
   if (usbDeviceName != null) {
-    document.getElementById("devicename").innerHTML = usbDeviceName;
+    document.getElementById('devicename').innerHTML = usbDeviceName;
     toggleClassForElementWithIdTo("devicename", "devicenameshown");
-  } else {
+  }
+  else {
     // TRY TO REPLACE WITH MEANINGFUL STUFF
     if (port != null) {
       const { usbProductId, usbVendorId } = port.getInfo();
-      document.getElementById("devicename").innerHTML =
-        "Unknown (prodId: " + usbProductId + " vendId: " + usbVendorId + ")";
-    } else {
-      document.getElementById("devicename").innerHTML = "Unknown device";
+      document.getElementById('devicename').innerHTML = "Unknown (prodId: " + usbProductId + " vendId: " + usbVendorId + ")";
+    }
+    else {
+      document.getElementById('devicename').innerHTML = "Unknown device";
     }
     toggleClassForElementWithIdTo("devicename", "devicenameunknown");
   }
+
 }
 
 /********************************
- * CORE CONNECTION STATE HANDLING
- *********************************/
+* CORE CONNECTION STATE HANDLING
+*********************************/
 
 // PUTS THE WHOLE UI INTO INCOMPATIBLE STATE
 function setStateIncompatible() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo("status", "statusyellow");
-  document.getElementById("status").innerHTML = "(Incompatible)";
+  toggleClassForElementWithIdTo('status', "statusyellow");
+  document.getElementById('status').innerHTML = '(Incompatible)';
   // HELP TEXT
-  document.getElementById("help").innerHTML =
-    "Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.";
+  document.getElementById('help').innerHTML = 'Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.';
   // BUTTON
-  toggleClassForElementWithIdTo("connect", "unconnectable");
-  document.getElementById("connect").innerHTML =
-    "Connections via USB not supported by this Browser!";
+  toggleClassForElementWithIdTo('connect', "unconnectable");
+  document.getElementById('connect').innerHTML = 'Connections via USB not supported by this Browser!';
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
-  document.getElementById("devicename").innerHTML = "Unknown device";
+  document.getElementById('devicename').innerHTML = "Unknown device";
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;
@@ -868,17 +1050,17 @@ function setStateIncompatible() {
 function setStateToDisconnected() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo("status", "statusred");
-  document.getElementById("status").innerHTML = "(Disconnected)";
+  toggleClassForElementWithIdTo('status', "statusred");
+  document.getElementById('status').innerHTML = '(Disconnected)';
   // BUTTON
-  toggleClassForElementWithIdTo("connect", "disconnected");
-  document.getElementById("connect").innerHTML = "Connect via USB ...";
+  toggleClassForElementWithIdTo('connect', "disconnected");
+  document.getElementById('connect').innerHTML = 'Connect via USB ...';
   // DISCONNECT BUTTON
-  toggleClassForElementWithIdTo("disconnectbutton", "disconnectbuttonhidden");
-  disconnectbutton;
+  toggleClassForElementWithIdTo('disconnectbutton', "disconnectbuttonhidden");
+  disconnectbutton
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
-  document.getElementById("devicename").innerHTML = "Unknown device";
+  document.getElementById('devicename').innerHTML = "Unknown device";
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;
@@ -889,13 +1071,13 @@ function setStateToDisconnected() {
 function setStateToConnected() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo("status", "statusgreen");
-  document.getElementById("status").innerHTML = "(Connected)";
+  toggleClassForElementWithIdTo('status', "statusgreen");
+  document.getElementById('status').innerHTML = '(Connected)';
   // BUTTON
-  toggleClassForElementWithIdTo("connect", "connected");
-  document.getElementById("connect").innerHTML = "Connected via USB";
+  toggleClassForElementWithIdTo('connect', "connected");
+  document.getElementById('connect').innerHTML = 'Connected via USB';
   // DISCONNECT BUTTON
-  toggleClassForElementWithIdTo("disconnectbutton", "disconnectbutton");
+  toggleClassForElementWithIdTo('disconnectbutton', "disconnectbutton");
   // DEVICE
   setStateForDeviceName();
   if (openPortCheckTimer == null) {
@@ -909,25 +1091,27 @@ function isBrowserCompatible() {
     if (navigator && "serial" in navigator) {
       // DO NOTHIN WE ARE FINE
       return true;
-    } else {
+    }
+    else {
       setStateIncompatible();
       return false;
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
     return false;
   }
 }
 
 /********************************
- * LAUNCH OF WEBSITE
- *********************************/
+* LAUNCH OF WEBSITE
+*********************************/
 
 // ASSEMBLE HTML CODE NEEDED TO FILL SITE FOR LAUNCH
-appendHtmlForSlotsToDOM();
+injectHtmlForSlotsToDOM();
 
 // ATTACH CLICK LISTENER TO CONNECT-BUTTON
-document.getElementById("connect").addEventListener("click", async () => {
+document.getElementById('connect').addEventListener('click', async () => {
   // REQUEST A PORT AND OPEN THE CONNECTION
   try {
     // REQUEST PORT IF WE HAVE NO PERMISSION TO A PORT YET (BROWSER WILL PRESENT LIST To SELECT FROM)
@@ -935,26 +1119,47 @@ document.getElementById("connect").addEventListener("click", async () => {
     // TRY TO GET DEVICE NAME IF KNOWN
     setStateForDeviceName();
     reconnectToDevice();
-  } catch (error) {
-    // USER DID NOT PICK A PORT, NOTHING TO DO
-    if (hasAlreadyWorkingPort()) {
-      // CHECK IF WE ARE ALREADY A PORT WITH PERMISSION
+  }
+  catch (error) { // USER DID NOT PICK A PORT, NOTHING TO DO
+    if (hasAlreadyWorkingPort()) { // CHECK IF WE ARE ALREADY A PORT WITH PERMISSION
       port = getAvailablePort();
       // RE-READ INFOS FROM DEVICE INSTEAD
       reconnectToDevice();
-    } else {
+    }
+    else {
       console.error(error);
-      alertShowWithInnerHtml(
-        "Please select a serial port for your device from the list the browser presented to you.",
-      );
+      alertShowWithInnerHtml("Please select a serial port for your device from the list the browser presented to you.");
     }
   }
 });
 
+
+// ADD EVENT LISTENER TO UPLOAD WINDOW
+/*
+document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Please choose a file!');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    uploadFile(formData);
+});
+*/
+
+
 // CHECK IF RIGHT/COMPATIBLE BROWSER, IF NOT SHOW THAT TO USER
 if (!isBrowserCompatible()) {
   console.log("ERROR: BROWSER DOES NOT PROVIDE WEB SERIAL-/USB-API.");
-} else {
+}
+else {
   // ADD BROWSER-LISTENER WHAT TO DO IN CASE WE RE-/CONNECT TO DEVICE
   navigator.serial.addEventListener("connect", (event) => {
     setStateToConnected();
@@ -969,69 +1174,12 @@ if (!isBrowserCompatible()) {
     port = getAvailablePort();
     // RE-READ INFOS FROM DEVICE...
     reconnectToDevice();
-  } else {
+  }
+  else {
     // USER HAS TO MANUALLY CLICK BUTTON TO SELECT A SERIAL PORT
   }
 }
 
 /********************************
- * LEGACY STUFF
- *********************************/
-
-/*
-
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'slot';
-        slotDiv.innerHTML = `
-            <h3 style="display:inline"><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>
-            <div id="slot-content-${i}" style="display:none">
-                <fieldset>
-                    <legend>Movement, spacing & character width</legend>
-                    <label for="textType-${i}">Type</label>
-                    <select id="textType-${i}" value="1" onChange="setTextOptionsForSlot(${i})">
-                        <option value="0">None</option>
-                        <option value="1" selected>Static</option>
-                        <option value="2">Scrolling</option>
-                    </select>
-
-                    &nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>
-                    <input type="number" class="numInput" id="offset-interval-${i}" min="0" max="255" value="0">
-
-                    &nbsp;<label for="char-space-${i}">Char Space</label>
-                    <input type="number" class="numInput" id="char-space-${i}" min="0" max="60" value="2">
-
-                    &nbsp;<label for="char-scaler-${i}">Char Scaler</label>
-                    <input type="number" class="numInput" id="char-scaler-${i}" min="1" max="5" value="1">
-
-                </fieldset>
-                <div id="text-options-${i}">
-                    <fieldset>
-                    <legend>Text for display (can be up to 75 chars...)</legend>
-                        <input type="text" id="text-${i}" size="75" maxlength="75" value="" placeholder="Text to display goes here...">
-                    </fieldset>
-                </div>
-                <fieldset>
-                    <legend>Animation options</legend>
-                    <label id="duration-label-${i}" for="duration-${i}">Duration</label>
-                    <input type="number" class="numInput" id="duration-${i}" min="1" max="60" value="1">
-
-                    &nbsp;<label for="animation-${i}">Animation</label>
-                    <select id="animation-${i}">
-                        <option value="0">Static Off</option>
-                        <option value="1" selected>Static On</option>
-                        <option value="2">Matrix</option>
-                        <option value="3">Sweep</option>
-                        <option value="4">Wave</option>
-                        <option value="5">Lines</option>
-                        <option value="6">Lines Fill</option>
-                        <option value="7">Rotate</option>
-                        <option value="8">Rotate Fill</option>
-                        <option value="9">Circles</option>
-                    </select>
-
-                </fieldset>
-            </div>
-        `;
-        slotsContainer.appendChild(slotDiv);
-
-        */
+* LEGACY STUFF
+*********************************/

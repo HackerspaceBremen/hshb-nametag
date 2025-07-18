@@ -1,73 +1,53 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Name Tag Configurator</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-  </head>
-  <body>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+</head>
+
+<body>
     <div class="head">
-      <h1>
-        <span id="spinner" class="spinnerhide"></span>Name Tag
-        Configurator&nbsp;<span id="status" class="statusred"></span
-        ><button id="connect" class="preparing">
-          Connect device & select USB port ...</button
-        ><button
-          id="disconnectbutton"
-          class="disconnectbuttonhidden"
-          onclick="disconnectFromDevice();"
-        >
-          Disconnect
-        </button>
-      </h1>
-      <div>
-        <span
-          id="devicename"
-          class="devicenameunknown"
-          onclick="askForDevicename();"
-          >Unknown Device</span
-        ><span class="editsymbol">&nbsp;(Click to edit)</span>
-      </div>
+        <h1><span id="spinner" class="spinnerhide"></span>Name Tag Configurator&nbsp;<span id="status"
+                class="statusred"></span><button id="connect" class="preparing">Connect device & select USB port
+                ...</button><button id="disconnectbutton" class="disconnectbuttonhidden"
+                onclick="disconnectFromDevice();">Disconnect</button></h1>
+        <div><span id="devicename" class="devicenameunknown" onclick="askForDevicename();">Unknown Device</span><span
+                class="editsymbol">&nbsp;(Click to edit)</span></div>
     </div>
     <div class="attention"></div>
-    <div class="content" style="margin-bottom: 20px">
-      <strong>Configuration:</strong> <span id="setselector"></span>&nbsp;<a
-        id="download"
-        download="configuration.json"
-        class="downloadhidden"
-        >Download</a
-      >
+    <div class="content" style="margin-bottom:20px;">
+        <strong>Configuration:</strong> <span id="setselector" class="setselector" onclick="editConfigName()"></span><span
+                class="editset">&nbsp;(Click to edit)</span>&nbsp;<a id='upload'
+            class="upload" onclick="prepareUpload()">Import</a>&nbsp;&nbsp;<a id='download'
+            download="configuration.json" class="downloadhidden">Download</a>
     </div>
-    <div class="content" style="margin-bottom: 20px">
-      <button onclick="askWriteAllSlots()" class="writeallslots">
-        Send all slots...
-      </button>
-      <span id="help" class="help"
-        >Please connect your badge via USB cable to the computer. Then click the
-        "Connect via USB"-button to start interaction with the badge. It should
-        automatically load the configured Slots.</span
-      >
+    <div class="content" style="margin-bottom:20px;">
+        <button onclick="askWriteAllSlots()" class="writeallslots">Send all slots...</button>
+        <span id="help" class="help">Please connect your badge via USB cable to the computer. Then click the "Connect
+            via USB"-button to start interaction with the badge. It should automatically load the configured
+            Slots.</span>
     </div>
     <div class="content">
-      <div id="slots">
-        <noscript class="noscript"
-          >Please activate Javascript to use this configurator.</noscript
-        >
-      </div>
+        <div id="slots"><noscript class="noscript">Please activate Javascript to use this configurator.</noscript></div>
     </div>
-    <br clear="all" />
+    <br clear="all">
     <div class="attention"></div>
-    <div class="version">
-      Name Tag Configurator — Version 1.8 —
-      <a href="https://hackerspacebremen.github.io/hshb-nametag/">see online</a>
-    </div>
-    <div id="alert" class="alert">
-      ERROR
-      <div id="alertcontent" class="alertcontent"></div>
-      <span class="alertok" onclick="alertClose()">&nbsp;OK&nbsp;</span>
+    <div class="version">Name Tag Configurator — <span id="version"></span> — <a href="https://hackerspacebremen.github.io/hshb-nametag/">see
+            online</a></div>
+    <div id="alert" class="alert">ERROR<div id="alertcontent" class="alertcontent"></div><span class="alertok"
+            onclick="alertClose('alert')">&nbsp;OK&nbsp;</span></div>
+    <div id="uploadwindow" class="uploadwindow">IMPORT CONFIGURATION<div id="uploadcontent" class="uploadcontent">
+            <form><input type="file" id="fileinput" /> <!-- input type="file" id="fileinput" multiple / -->
+                <div id="uploadStatus" style="margin-top:20px;margin-bottom:20px;">&nbsp;</div>
+            </form>
+        </div>
+        <span class="alertok" onclick="alertClose('uploadwindow')">&nbsp;CANCEL&nbsp;</span>
     </div>
     <script src="main.js"></script>
-  </body>
+</body>
+
 </html>

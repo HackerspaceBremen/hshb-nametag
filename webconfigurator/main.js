@@ -19,18 +19,15 @@ let reader = null;
 let readableStreamClosed = null;
 let readerAborter = null;
 let writer = null;
-let messageBuffer = '';
+let messageBuffer = "";
 let timeoutId = null;
 let defaultDeviceConfigurationSet = null;
 let shouldPrepareDownloadAfterChange = false;
-
-const slotsContainer = document.getElementById('slots');
-const inputElement = document.getElementById("fileinput");
-inputElement.addEventListener("change", checkFiles, false); // NEEDED FOR CONFIG IMPORT
+const slotsContainer = document.getElementById("slots");
 
 /********************************
-* PLANNED FEATURES / FUTURE
-*********************************/
+ * PLANNED FEATURES / FUTURE
+ *********************************/
 /*
 
 - export setup as JSON [DONE]
@@ -38,19 +35,19 @@ inputElement.addEventListener("change", checkFiles, false); // NEEDED FOR CONFIG
 - save a setup of all slots as a local file which can be shared easily [DONE]
 - load/import a setup to send it to device [DONE]
 - import setup from JSON/file etc. [DONE]
+- better unified window overlay [DONE]
 - simulated effects-preview for the slots configured
 
 */
 
-
 /********************************
-* CONFIGURATION DATA MODEL CLASSES
-*********************************/
+ * CONFIGURATION DATA MODEL CLASSES
+ *********************************/
 
 // CARRIES META DATA ABOUT FILE FORMAT VERSION
 class DeviceSetMeta {
   // METADATA FOR FILE FORMAT
-  static VERSION = "1.9";
+  static VERSION = "2.0";
   FILE_VERSION = DeviceSetMeta.VERSION;
   AUTHOR = "blazr";
   DEVICE = "HSHB LED Tag";
@@ -68,15 +65,13 @@ class DeviceSetMeta {
 
 // CLASS DEFINING AN EFFECT SETUP
 class DeviceSet {
-
   META = null;
 
   constructor(displayName, uniqueIdentifier) {
     this.displayName = displayName;
     if (uniqueIdentifier == null) {
       this.uniqueIdentifier = self.crypto.randomUUID();
-    }
-    else {
+    } else {
       this.uniqueIdentifier = uniqueIdentifier;
     }
     this.slots = [];
@@ -107,7 +102,13 @@ class DeviceSet {
 // CLASS FUNCTION TO DESERIALIZE A NEW SETUP FROm JSON
 DeviceSet.fromJSON = function (json) {
   let deviceSet = new DeviceSet(json.displayName, json.uniqueIdentifier);
-  deviceSet.META = new DeviceSetMeta(json.META.FILE_VERSION, json.META.AUTHOR, json.META.DEVICE, json.META.DATECREATED, json.META.DATECHANGED);
+  deviceSet.META = new DeviceSetMeta(
+    json.META.FILE_VERSION,
+    json.META.AUTHOR,
+    json.META.DEVICE,
+    json.META.DATECREATED,
+    json.META.DATECHANGED
+  );
   json.slots.forEach((slot, i) => {
     // console.warn( ""+slot );
     let slotToAdd = DeviceSlot.fromJSON(slot);
@@ -115,8 +116,7 @@ DeviceSet.fromJSON = function (json) {
     deviceSet.addSlot(slotToAdd);
   });
   return deviceSet;
-}
-
+};
 
 // CLASS DEFINING ONE SLOT
 class DeviceSlot {
@@ -131,7 +131,17 @@ class DeviceSlot {
   static minDuration = 1;
   static maxDuration = 5;
 
-  constructor(slotId, textTypeId, xOffset, charSpace, charScale, text, duration, animationId, active) {
+  constructor(
+    slotId,
+    textTypeId,
+    xOffset,
+    charSpace,
+    charScale,
+    text,
+    duration,
+    animationId,
+    active
+  ) {
     this.slotId = slotId;
     this.textTypeId = textTypeId;
     this.xOffset = xOffset;
@@ -153,8 +163,7 @@ class DeviceSlot {
   selectedTextTypeForId(optionId) {
     if (this.textTypeId == optionId) {
       return "selected";
-    }
-    else {
+    } else {
       return "";
     }
   }
@@ -162,32 +171,35 @@ class DeviceSlot {
   selectedAnimationForId(animationId) {
     if (this.animationId == animationId) {
       return "selected";
-    }
-    else {
+    } else {
       return "";
     }
   }
 
   htmlDiv() {
     let i = this.slotId;
-    const slotDiv = document.createElement('div');
-    slotDiv.className = 'slot';
+    const slotDiv = document.createElement("div");
+    slotDiv.className = "slot";
     let html = "";
-    html += `<h3 style="display:inline"><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
+    html += `<h3 style="display:inline" id="slot-name-${i}" class=""><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
     html += `<div id="slot-content-${i}" style="display:none">`;
     html += `<fieldset><legend>Movement, spacing & character width</legend>`;
     html += `<label for="textType-${i}">Type</label>`;
     html += `<select id="textType-${i}" value="${this.textType}" onChange="setTextOptionsForSlot(${i});dirty();">`;
     html += `<option value="0" ${this.selectedTextTypeForId(0)}>None</option>`;
-    html += `<option value="1" ${this.selectedTextTypeForId(1)}>Static</option>`;
-    html += `<option value="2" ${this.selectedTextTypeForId(2)}>Scrolling</option>`;
+    html += `<option value="1" ${this.selectedTextTypeForId(
+      1
+    )}>Static</option>`;
+    html += `<option value="2" ${this.selectedTextTypeForId(
+      2
+    )}>Scrolling</option>`;
     html += `</select>`;
     html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>`;
-    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${this.minOffsetX}" max="${this.maxOffsetX}" value="${this.xOffset}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${DeviceSlot.minOffsetX}" max="${DeviceSlot.maxOffsetX}" value="${this.xOffset}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-space-${i}">Char Space</label>`;
-    html += `<input type="number" class="numInput" id="char-space-${i}" min="${this.minCharSpace}" max="${this.maxCharSpace}" value="${this.charSpace}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="char-space-${i}" min="${DeviceSlot.minCharSpace}" max="${DeviceSlot.maxCharSpace}" value="${this.charSpace}" onchange="dirty();"> `;
     html += `&nbsp;<label for="char-scaler-${i}">Char Scaler</label>`;
-    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${this.minCharScale}" max="${this.maxCharScale}" value="${this.charScale}" onchange="dirty();">`;
+    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${DeviceSlot.minCharScale}" max="${DeviceSlot.maxCharScale}" value="${this.charScale}" onchange="dirty();">`;
     html += `</fieldset>`;
     html += `<div id="text-options-${i}">`;
     html += `<fieldset><legend id="scrolltextinfo-${i}">Text for display (can be up to ${DeviceSlot.maxTextLength} chars...)</legend>`;
@@ -196,19 +208,37 @@ class DeviceSlot {
     html += `</div>`;
     html += `<fieldset><legend>Animation options</legend>`;
     html += `<label id="duration-label-${i}" for="duration-${i}">Duration seconds</label>`;
-    html += `<input type="number" class="numInput" id="duration-${i}" min="${this.minDuration}" max="${this.maxDuration}" value="${this.duration}" onchange="dirty();"> `;
+    html += `<input type="number" class="numInput" id="duration-${i}" min="${DeviceSlot.minDuration}" max="${DeviceSlot.maxDuration}" value="${this.duration}" onchange="dirty();"> `;
     html += `&nbsp;<label for="animation-${i}">Animation</label>`;
     html += `<select id="animation-${i}" onchange="dirty();">`;
-    html += `<option value="0" ${this.selectedAnimationForId(0)}>Static Off</option>`;
-    html += `<option value="1" ${this.selectedAnimationForId(1)}>Static On</option>`;
-    html += `<option value="2" ${this.selectedAnimationForId(2)}>Matrix</option>`;
-    html += `<option value="3" ${this.selectedAnimationForId(3)}>Sweep</option>`;
+    html += `<option value="0" ${this.selectedAnimationForId(
+      0
+    )}>Static Off</option>`;
+    html += `<option value="1" ${this.selectedAnimationForId(
+      1
+    )}>Static On</option>`;
+    html += `<option value="2" ${this.selectedAnimationForId(
+      2
+    )}>Matrix</option>`;
+    html += `<option value="3" ${this.selectedAnimationForId(
+      3
+    )}>Sweep</option>`;
     html += `<option value="4" ${this.selectedAnimationForId(4)}>Wave</option>`;
-    html += `<option value="5" ${this.selectedAnimationForId(5)}>Lines</option>`;
-    html += `<option value="6" ${this.selectedAnimationForId(6)}>Lines Fill</option>`;
-    html += `<option value="7" ${this.selectedAnimationForId(7)}>Rotate</option>`;
-    html += `<option value="8" ${this.selectedAnimationForId(8)}>Rotate Fill</option>`;
-    html += `<option value="9" ${this.selectedAnimationForId(9)}>Circles</option>`;
+    html += `<option value="5" ${this.selectedAnimationForId(
+      5
+    )}>Lines</option>`;
+    html += `<option value="6" ${this.selectedAnimationForId(
+      6
+    )}>Lines Fill</option>`;
+    html += `<option value="7" ${this.selectedAnimationForId(
+      7
+    )}>Rotate</option>`;
+    html += `<option value="8" ${this.selectedAnimationForId(
+      8
+    )}>Rotate Fill</option>`;
+    html += `<option value="9" ${this.selectedAnimationForId(
+      9
+    )}>Circles</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;
@@ -218,12 +248,22 @@ class DeviceSlot {
 
 // CLASS FUNCTION TO DESERIALIZE A NEW SLOT FROM JSON
 DeviceSlot.fromJSON = function (json) {
-  return new DeviceSlot(json.slotId, json.textTypeId, json.xOffset, json.charSpace, json.charScale, json.text, json.duration, json.animationId, json.active);
-}
+  return new DeviceSlot(
+    json.slotId,
+    json.textTypeId,
+    json.xOffset,
+    json.charSpace,
+    json.charScale,
+    json.text,
+    json.duration,
+    json.animationId,
+    json.active
+  );
+};
 
 /********************************
-* CONFIGURATION SETUP HANDLING
-*********************************/
+ * CONFIGURATION SETUP HANDLING
+ *********************************/
 
 // GET THE CURRENT ACTIVE DEVICE CONFIG
 function defaultSet() {
@@ -239,13 +279,16 @@ function defaultSet() {
 
 function editConfigName() {
   let placeholder = defaultSet().displayName;
-  let configName = prompt("Please enter a name for your configuration set", placeholder);
+  let configName = prompt(
+    "Please enter a name for your configuration set",
+    placeholder
+  );
   if (configName != null) {
     defaultSet().displayName = configName;
     hasTouchedOrChangedTheConfigurationData();
-    document.getElementById("setselector").textContent = defaultSet().displayName;
-  }
-  else {
+    document.getElementById("setselector").textContent =
+      defaultSet().displayName;
+  } else {
     // do nothing
   }
 }
@@ -255,8 +298,12 @@ function hasTouchedOrChangedTheConfigurationData() {
   if (prepareDownloadTimer) {
     clearTimeout(prepareDownloadTimer);
   }
-  prepareDownloadTimer = setTimeout(prepareDownload, TIMEINTERVAL_WAIT_FOR_DOWNLOAD);
-  toggleClassForElementWithIdTo('download', 'downloadhidden');
+  prepareDownloadTimer = setTimeout(
+    prepareDownload,
+    TIMEINTERVAL_WAIT_FOR_DOWNLOAD
+  );
+  toggleClassForElementWithIdTo("download", "downloadhidden");
+  toggleClassForElementWithIdTo("share", "sharehidden");
 }
 
 // SHORTER NAME FOR HANDLERS
@@ -264,31 +311,80 @@ function dirty() {
   hasTouchedOrChangedTheConfigurationData();
 }
 
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function showRemainingChars(slotId) {
-  let textField = document.getElementById('text-' + slotId);
-  let textInfo = document.getElementById('scrolltextinfo-' + slotId);
+  let textField = document.getElementById("text-" + slotId);
+  let textInfo = document.getElementById("scrolltextinfo-" + slotId);
   let charsRemaining = DeviceSlot.maxTextLength - textField.value.length;
-  textInfo.textContent = "Text for display (can be up to " + DeviceSlot.maxTextLength + " chars... " + charsRemaining + " remaining)";
+  textInfo.textContent =
+    "Text for display (can be up to " +
+    DeviceSlot.maxTextLength +
+    " chars... " +
+    charsRemaining +
+    " remaining)";
 }
 
 // TRANSFORM DATA INTO DATA-URL FOR DOWNLOAD FROM CURRENT CONFIG SET
 function prepareDownload() {
   const nowDate = new Date();
   const nowTime = nowDate.getTime();
-  const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1}-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
-  const downloadButton = document.getElementById('download');
+  const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1
+    }-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
+  const downloadButton = document.getElementById("download");
   defaultSet().META.DATECHANGED = nowDate;
   let dataToDownload = defaultSet().json();
-  downloadButton.href = 'data:application/octet-stream;base64,' + btoa(dataToDownload);
+  downloadButton.href =
+    "data:application/octet-stream;base64," + btoa(dataToDownload);
   downloadButton.download = "hshb-tag-configuration-" + formattedDate + ".json";
-  toggleClassForElementWithIdTo('download', 'download');
+  toggleClassForElementWithIdTo("download", "download");
+  const shareButton = document.getElementById("share");
+  let embedShareText =
+    '<a href="data:application/octet-stream;base64,' +
+    btoa(dataToDownload) +
+    '" download="' +
+    "shared-configuration-" +
+    formattedDate +
+    ".json" +
+    '">' +
+    defaultSet().displayName +
+    "</a>";
+  shareButton.value = embedShareText;
+  toggleClassForElementWithIdTo("share", "share");
+}
+
+// SHOW WINDOW WHERE EMBED CODE IS SHOWN
+function showEmbedShare() {
+  const shareButton = document.getElementById("share");
+  windowShowWithTypeAndTitleAndInnerHtml(
+    "SHARE",
+    "share",
+    "Copied to clipboard.",
+    "<code style='word-break:break-all;'>" +
+    escapeHtml(shareButton.value) +
+    "</code>"
+  );
+  navigator.clipboard.writeText(shareButton.value);
 }
 
 // SHOW UPLOAD/IMPORT WINDOW
 function prepareUpload() {
-  document.getElementById("uploadwindow").style.display = "block";
-  document.getElementById("uploadStatus").innerHTML = "Please choose ond .json configuration file stored.";
+  let htmlInjection = `<form><input type="file" id="fileinput" /><div id="uploadStatus" style="margin-top:20px;margin-bottom:20px;">&nbsp;</div></form>`;
+  windowShowWithTypeAndTitleAndInnerHtml(
+    "IMPORT",
+    "info",
+    "Please choose one .json configuration file stored to be imported.",
+    htmlInjection
+  );
+  let inputElement = document.getElementById("fileinput");
+  inputElement.addEventListener("change", checkFiles, false);
 }
 
 // EXECUTED TO IMPORT A CONFIGURATION AS JSON
@@ -303,7 +399,8 @@ async function checkFiles() {
   console.log("FILE NAME: " + selectedFile.name);
   console.log("FILE SIZE: " + selectedFile.size);
   console.log("FILE TYPE: " + selectedFile.type);
-  if (selectedFile.type == "application/json") { // PROCESS FILE
+  if (selectedFile.type == "application/json") {
+    // PROCESS FILE
     // Read the file
     const reader = new FileReader();
     reader.onload = () => {
@@ -311,8 +408,7 @@ async function checkFiles() {
       try {
         importedJson = JSON.parse(reader.result);
         importedSet = DeviceSet.fromJSON(importedJson);
-      }
-      catch (error) {
+      } catch (error) {
         let detectedFileVersion = null;
         try {
           if ("META" in importedJson) {
@@ -320,45 +416,56 @@ async function checkFiles() {
               detectedFileVersion = importedJson.META.FILE_VERSION;
             }
           }
-        }
-        catch (error) {
+        } catch (error) {
           // do nothing
         }
         if (detectedFileVersion != null) {
-          document.getElementById('uploadStatus').textContent = "ERROR: Configuration file not readable.<br>Detected file format uses version " + detectedFileVersion + ", but this configurator is already on version " + DeviceSetMeta.VERSION + ". Maybe the format is incompatible."
-        }
-        else {
-          document.getElementById('uploadStatus').innerHTML = "ERROR: Configuration file not readable/parsable.<br><code>" + error + "</code>";
+          document.getElementById("uploadStatus").textContent =
+            "ERROR: Configuration file not readable.<br>Detected file format uses version " +
+            detectedFileVersion +
+            ", but this configurator is already on version " +
+            DeviceSetMeta.VERSION +
+            ". Maybe the format is incompatible.";
+        } else {
+          document.getElementById("uploadStatus").innerHTML =
+            "ERROR: Configuration file not readable/parsable.<br><code>" +
+            error +
+            "</code>";
         }
         console.error(error);
       }
       if (importedSet != null) {
-        document.getElementById('uploadStatus').innerHTML = "Imported successfully.";
+        document.getElementById("uploadStatus").innerHTML =
+          "Imported successfully.";
+        let inputElement = document.getElementById("fileinput");
         inputElement.value = null;
         defaultDeviceConfigurationSet = importedSet;
-        document.getElementById("uploadwindow").style.display = 'none';
+        document.getElementById("window").style.display = "none";
         loadDeviceSetIntoUI(defaultSet());
         prepareDownload();
-      }
-      else {
-        document.getElementById('uploadStatus').innerHTML = "Data was empty. Nothing imported!";
+      } else {
+        document.getElementById("uploadStatus").innerHTML =
+          "Data was empty. Nothing imported!";
       }
     };
     reader.onerror = () => {
-      document.getElementById('uploadStatus').textContent = "Error reading the file. Please try again.";
+      document.getElementById("uploadStatus").textContent =
+        "Error reading the file. Please try again.";
     };
     reader.readAsText(selectedFile);
-  }
-  else {
-    document.getElementById('uploadStatus').textContent = "Wrong file format! Please upload .json files only.";
+  } else {
+    document.getElementById("uploadStatus").textContent =
+      "Wrong file format! Please upload .json files only.";
   }
 }
 
 // APPLIES AN IMPORTED SETUP TO THE USER INTERFACE
 function loadDeviceSetIntoUI(deviceconfiguration) {
-  document.getElementById("setselector").textContent = deviceconfiguration.displayName;
+  document.getElementById("setselector").textContent =
+    deviceconfiguration.displayName;
   // ITERATE OVER ALL SLOTS AND APPLY VALUES TO UI
-  slotsContainer.innerHTML = "<h2 class='blink'>Importing, please wait ... </h2>";
+  slotsContainer.innerHTML =
+    "<h2 class='blink'>Importing, please wait ... </h2>";
   spinnerShouldShow = true;
   setTimeout(() => {
     slotsContainer.innerHTML = "";
@@ -382,7 +489,9 @@ async function configurationSynchronize() {
     slot.text = document.getElementById("text-" + i).value;
     slot.animationId = Number(document.getElementById("animation-" + i).value);
     slot.duration = Number(document.getElementById("duration-" + i).value);
-    slot.xOffset = Number(document.getElementById("offset-interval-" + i).value);
+    slot.xOffset = Number(
+      document.getElementById("offset-interval-" + i).value
+    );
     slot.charScale = Number(document.getElementById("char-scaler-" + i).value);
     slot.charSpace = Number(document.getElementById("char-space-" + i).value);
     slot.active = document.getElementById("active-" + i).checked;
@@ -393,16 +502,16 @@ async function configurationSynchronize() {
 }
 
 /********************************
-* CREATE AND INJECT SOME HTML FOR PAGE
-*********************************/
-
+ * CREATE AND INJECT SOME HTML FOR PAGE
+ *********************************/
 
 // BUILD DEFAULT CONFIG SET
 defaultSet();
 
 // BUILD DOM
 function injectHtmlForSlotsToDOM() {
-  document.getElementById('setselector').innerHTML = defaultSet().displayName + " (" + defaultSet().numberOfSlots() + " slots)";
+  document.getElementById("setselector").innerHTML =
+    defaultSet().displayName + " (" + defaultSet().numberOfSlots() + " slots)";
   for (let i = 0; i < MAX_NUM_SLOTS; i++) {
     let currentSlot = defaultSet().slotWithIndex(i);
     slotsContainer.appendChild(currentSlot.htmlDiv());
@@ -410,21 +519,53 @@ function injectHtmlForSlotsToDOM() {
 }
 
 // DERIVE THE VERION OF WEBCONFIGURATOR FROM DeviceSetMeta-CLASS PROPERTY
-document.getElementById('version').innerHTML = "Version " + DeviceSetMeta.VERSION;
+document.getElementById("version").innerHTML =
+  "Version " + DeviceSetMeta.VERSION;
 
 /********************************
-* GENERAL HELPER FUNCTIONS
-*********************************/
+ * GENERAL HELPER FUNCTIONS
+ *********************************/
 
-// SHOW AN ALERT MESSAGE
-function alertShowWithInnerHtml(htmlToPlace) {
-  document.getElementById('alertcontent').innerHTML = htmlToPlace;
-  document.getElementById('alert').style.display = 'block';
+// SCROLL SMOTHLY TO An ELEMENT
+function scrollToElementWithId(element_id) {
+  try {
+    let targetElement = document.getElementById(element_id);
+    scrollOptions = { "behavior": "smooth", "block": "center", "inline": "nearest" };
+    targetElement.scrollIntoView(scrollOptions);
+  }
+  catch (error) {
+    // do nothing 
+  }
 }
 
-// DISMISS ALERT MESSAGE
-function alertClose(element_id) {
-  document.getElementById(element_id).style.display = 'none';
+// SHOW A MESSAGE IN A WINDOW WITH A CERTAIN STYLE AND CONTENT
+function windowShowWithTypeAndTitleAndInnerHtml(
+  title,
+  type,
+  footer,
+  html_content
+) {
+  document.getElementById("windowtitle").innerHTML = title;
+  document.getElementById("windowfooter").innerHTML = footer;
+  document.getElementById("windowcontent").innerHTML = html_content;
+  if (type == "error") {
+    document.getElementById("windowcontent").style.backgroundColor = "#990225";
+    document.getElementById("window").style.backgroundColor = "#cb0141";
+  }
+  if (type == "info") {
+    document.getElementById("windowcontent").style.backgroundColor = "#017dcb";
+    document.getElementById("window").style.backgroundColor = "#1f97e1";
+  }
+  if (type == "share") {
+    document.getElementById("windowcontent").style.backgroundColor = "#8a007c";
+    document.getElementById("window").style.backgroundColor = "#b1009f";
+  }
+  document.getElementById("window").style.display = "block";
+}
+
+// DISMISS ANY CUSTOM WINDOW
+function windowHide(element_id) {
+  document.getElementById(element_id).style.display = "none";
 }
 
 // STORE A VALUE INTO PERSISTENT LOCAL STORE (COOKIES DON'T WORK IN LOCAL MODE)
@@ -434,9 +575,8 @@ function setLocalStore(cname, cvalue, shouldEncodeBase64) {
   if (shouldEncodeBase64) {
     encodedValue = btoa(cvalue);
     // console.log( "LOCAL STORE: WROTE (BASE64) ... "+encodedValue );
-  }
-  else {
-    // console.log( "LOCAL STORE: WROTE ... "+encodedValue );        
+  } else {
+    // console.log( "LOCAL STORE: WROTE ... "+encodedValue );
   }
   localStorage.setItem(cname, encodedValue);
 }
@@ -452,8 +592,7 @@ function getLocalStore(cname, shouldDecodeBase64) {
   if (shouldDecodeBase64) {
     // console.log( "LOCAL STORE: READ (BASE64) ... "+extractedBase64Value );
     return atob(extractedBase64Value);
-  }
-  else {
+  } else {
     // console.log( "LOCAL STORE: READ ... "+extractedBase64Value );
     return extractedBase64Value;
   }
@@ -461,13 +600,12 @@ function getLocalStore(cname, shouldDecodeBase64) {
 
 // CALL ANY FUNCTION WITH A HARD TINMEOUT LIMIT
 function withTimeout(promise, timeout) {
-  return Promise
-    .race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), timeout)
-      )
-    ]);
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), timeout)
+    ),
+  ]);
 }
 
 // SET CSS-STYLE-CLASS FOR AN ELEMENT WITH ID
@@ -476,10 +614,13 @@ function toggleClassForElementWithIdTo(element_id, className) {
   if (e) {
     // console.log( "ELEMENT: "+element_id+" CLASS: "+className );
     let classesToRemove = e.classList;
-    e.classList.remove(classesToRemove);
-    e.classList.add(className);
-  }
-  else {
+    if (classesToRemove != null && classesToRemove.length > 0) {
+      e.classList.remove(classesToRemove);
+    }
+    if (className != null && className.length > 0) {
+      e.classList.add(className);
+    }
+  } else {
     console.log("ERROR: ELEMENT FOR ID " + element_id + " NOT FOUND.");
   }
 }
@@ -487,31 +628,32 @@ function toggleClassForElementWithIdTo(element_id, className) {
 // UPDATES THE ACTIVITY SPINNER ACCORING TO CURRENT STATE (GETS CALLED VERY OFTEN)
 function spinnerCheck() {
   if (spinnerShouldShow) {
-    if ("spinnershow" == document.getElementById('spinner').classList) {
-      //console.log( "NOTHING TO DO SHOW" );        
+    if ("spinnershow" == document.getElementById("spinner").classList) {
+      //console.log( "NOTHING TO DO SHOW" );
+    } else {
+      toggleClassForElementWithIdTo("spinner", "spinnershow");
     }
-    else {
-      toggleClassForElementWithIdTo('spinner', "spinnershow");
-    }
-  }
-  else {
-    if ("spinnerhide" == document.getElementById('spinner').classList) {
+  } else {
+    if ("spinnerhide" == document.getElementById("spinner").classList) {
       //console.log( "NOTHING TO DO HIDE" );
-    }
-    else {
-      toggleClassForElementWithIdTo('spinner', "spinnerhide");
+    } else {
+      toggleClassForElementWithIdTo("spinner", "spinnerhide");
     }
   }
 }
 
 /********************************
-* HTML RELATED ACTIONS TRIGGERED VIA THE UI
-*********************************/
+ * HTML RELATED ACTIONS TRIGGERED VIA THE UI
+ *********************************/
 
 // USER WANTS ALL SLOTS TO BE WRITTEN TO DEVICE
 function askWriteAllSlots() {
   if (port == null) return;
-  if (confirm("Really write all slots now?\n\nWARNING: Inactive slots will be cleared!")) {
+  if (
+    confirm(
+      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!"
+    )
+  ) {
     writeAllSlots();
   }
 }
@@ -530,7 +672,9 @@ function writeAllSlots() {
 function writeSlot(slt) {
   if (port == null) return;
   spinnerShouldShow = true;
-  if (document.getElementById("active-" + slt).checked) { // WRITE THIS SLOT
+  toggleClassForElementWithIdTo(`slot-name-${slt + 1}`, "blink");
+  if (document.getElementById("active-" + slt).checked) {
+    // WRITE THIS SLOT
     cmd = "W " + slt + " ";
     cmd += document.getElementById("animation-" + slt).value + " ";
     cmd += document.getElementById("duration-" + slt).value + " ";
@@ -540,8 +684,8 @@ function writeSlot(slt) {
     cmd += document.getElementById("char-space-" + slt).value + " ";
     cmd += document.getElementById("text-" + slt).value;
     sendUART(cmd + "\n");
-  }
-  else { // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
+  } else {
+    // DELETE SLOT INSTEAD, BECAUSE NOt CHECKED
     sendUART("D " + slt + "\n");
   }
   if (writingData && writingSlot < MAX_NUM_SLOTS - 1) {
@@ -550,9 +694,9 @@ function writeSlot(slt) {
     // launch delayed next write
     setTimeout(() => {
       writeSlot(writingSlot);
-    }, "1000");
-  }
-  else { // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
+    }, "2000");
+  } else {
+    // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
     writingData = false;
     spinnerShouldShow = false;
   }
@@ -561,21 +705,27 @@ function writeSlot(slt) {
 
 // SHOW AND HIDE SMALL GREEN CHECKMARK
 function writeConfirmation(slt) {
-  document.getElementById("writeConfirm-" + slt).classList.remove('hidden');
+  scrollToElementWithId(`slot-name-${slt + 1}`);
+
+  document.getElementById("writeConfirm-" + slt).classList.remove("hidden");
   setTimeout(() => {
-    document.getElementById("writeConfirm-" + slt).classList.add('hidden');
+    document.getElementById("writeConfirm-" + slt).classList.add("hidden");
+    toggleClassForElementWithIdTo(`slot-name-${slt}`, "");
+    if (writingData == false) {
+      scrollToElementWithId("spinner");
+    }
   }, "1000");
 }
 
 // ** NOT USED **
 function deleteSlot(index) {
-  document.getElementById(`text-${index}`).value = '';
-  document.getElementById(`animation-${index}`).value = 'none';
+  document.getElementById(`text-${index}`).value = "";
+  document.getElementById(`animation-${index}`).value = "none";
   document.getElementById(`textType-${index}`).checked = false;
-  document.getElementById(`offset-interval-${index}`).value = '';
-  document.getElementById(`duration-${index}`).value = '';
-  document.getElementById(`x-offset-${index}`).value = '';
-  document.getElementById(`char-scaler-${index}`).value = '';
+  document.getElementById(`offset-interval-${index}`).value = "";
+  document.getElementById(`duration-${index}`).value = "";
+  document.getElementById(`x-offset-${index}`).value = "";
+  document.getElementById(`char-scaler-${index}`).value = "";
   document.getElementById(`active-${index}`).checked = false;
   hasTouchedOrChangedTheConfigurationData();
 }
@@ -586,7 +736,6 @@ function setSlotVisibility(slt) {
     document.getElementById("slot-content-" + slt).style = "";
     toggleClassForElementWithIdTo("send-button-" + slt, "writeslot");
     document.getElementById("send-button-" + slt).innerHTML = "Send slot...";
-
   } else {
     document.getElementById("slot-content-" + slt).style = "display:none";
     toggleClassForElementWithIdTo("send-button-" + slt, "writeslotred");
@@ -599,13 +748,16 @@ function setSlotVisibility(slt) {
 function setTextOptionsForSlot(slt) {
   textType = document.getElementById("textType-" + slt).value;
   if (textType == 1) {
-
-    document.getElementById("duration-label-" + slt).innerHTML = "Duration seconds:";
-    document.getElementById("offset-interval-label-" + slt).innerHTML = "X Offset:";
+    document.getElementById("duration-label-" + slt).innerHTML =
+      "Duration seconds:";
+    document.getElementById("offset-interval-label-" + slt).innerHTML =
+      "X Offset:";
     document.getElementById("text-options-" + slt).style = "";
   } else if (textType == 2) {
-    document.getElementById("duration-label-" + slt).innerHTML = "Scroll Cycles:";
-    document.getElementById("offset-interval-label-" + slt).innerHTML = "Scroll Interval:";
+    document.getElementById("duration-label-" + slt).innerHTML =
+      "Scroll Cycles:";
+    document.getElementById("offset-interval-label-" + slt).innerHTML =
+      "Scroll Interval:";
     document.getElementById("text-options-" + slt).style = "";
   } else {
     document.getElementById("text-options-" + slt).style = "display:none";
@@ -613,25 +765,25 @@ function setTextOptionsForSlot(slt) {
 }
 
 /********************************
-* CORE DEVICE COMMUNICATION
-*********************************/
+ * CORE DEVICE COMMUNICATION
+ *********************************/
 
 // READLOOP WHICh RUNNS PERMANENTLY TO READ UNTIL TIMEOUT
 async function readLoop() {
   try {
     console.log("UART READING: WAITING FOR DATA ...");
-    while (true) { // WILL READ AS LONG A NEW DATE IS COMING
+    while (true) {
+      // WILL READ AS LONG A NEW DATE IS COMING
       const { value, done } = await reader.read().then();
       if (done) {
         reader.releaseLock();
         break;
       }
-      handleIncomingData(value)
+      handleIncomingData(value);
       console.log("UART READING: GOT DATA ...");
     }
     console.log("UART READING: EXIT/CANCELLING READLOOP");
-  }
-  catch (error) {
+  } catch (error) {
     console.error("READ LOOP: FAILED WITH ERROR\n" + error);
     reader = null;
     if (error.className == "NetworkError") {
@@ -649,10 +801,11 @@ async function handleIncomingData(data) {
     clearTimeout(timeoutId);
   }
   // Set a new timeout to process the message if no new data is received within timeout
-  timeoutId = setTimeout(() => { // ASSUME IF AFTER TIMEOUT NO MORE DATA COMING IN THAT MESSAGE IS COMPLETE, SO PROCESS IT AND RESET BUFFER
+  timeoutId = setTimeout(() => {
+    // ASSUME IF AFTER TIMEOUT NO MORE DATA COMING IN THAT MESSAGE IS COMPLETE, SO PROCESS IT AND RESET BUFFER
     spinnerShouldShow = false;
     processMessage(messageBuffer);
-    messageBuffer = ''; // Clear the buffer for the next message
+    messageBuffer = ""; // Clear the buffer for the next message
   }, TIMEOUT_NO_MORE_DATA_EXPECTED);
 }
 
@@ -669,15 +822,14 @@ function receiveUART(msg) {
     let slot = msg.charAt(5);
     if (msg.includes(":\r\n")) {
       let lines = msg.split("\r\n");
-      let dat = lines[1].split(' ');
+      let dat = lines[1].split(" ");
       let slotText = lines[2];
 
       if (dat.length < 7) {
         document.getElementById("textType-" + slot).value = 0;
         document.getElementById("animation-" + slot).value = dat[0];
         document.getElementById("duration-" + slot).value = dat[1];
-      }
-      else {
+      } else {
         document.getElementById("text-" + slot).value = slotText;
         document.getElementById("animation-" + slot).value = dat[1];
         document.getElementById("duration-" + slot).value = dat[2];
@@ -689,8 +841,7 @@ function receiveUART(msg) {
       document.getElementById("active-" + slot).checked = true;
       setSlotVisibility(slot);
       setTextOptionsForSlot(slot);
-    }
-    else if (msg.includes("not active")) {
+    } else if (msg.includes("not active")) {
       document.getElementById("active-" + slot).checked = false;
       setSlotVisibility(slot);
     }
@@ -703,8 +854,7 @@ function receiveUART(msg) {
     if (gettingSlot < MAX_NUM_SLOTS - 1) {
       gettingSlot++; // SEND COMMAND TO READ NEXT SLOT...
       sendUART("R " + gettingSlot + "\n");
-    }
-    else {
+    } else {
       gettingData = false;
     }
   }
@@ -721,20 +871,25 @@ async function sendUART(msg) {
       await writer.write(textEncoder.encode(msg));
       writer.releaseLock();
       console.log("UART SENDING: SUCCESS");
-    }
-    catch (error) {
+    } catch (error) {
       console.log("UART SENDING: ERROR\n" + error);
       writer = null;
       if (error.className == "NetworkError") {
         console.error("UART SENDING: (NetworkError)");
       }
-      alertShowWithInnerHtml("SENDING TO DEVICE FAILED.<br><br><code>" + msg + "</code><br><br>NOT SENT, LOST CONNECTION.");
+      windowShowWithTypeAndTitleAndInnerHtml(
+        "ERROR",
+        "error",
+        "An error occurred while trying to send data.",
+        "SENDING TO DEVICE FAILED.<br><br><code>" +
+        msg +
+        "</code><br><br>NOT SENT, LOST CONNECTION."
+      );
     }
-
-  }
-  else { // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
+  } else {
+    // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
     setStateToDisconnected();
-    // alertShowWithInnerHtml("Port is not open. Please connect to the port first.");
+    // windowShowWithTypeAndTitleAndInnerHtml("ERROR", "error", "Device lost connection.", "Port is not open. Please connect to the port first.");
   }
 }
 
@@ -748,8 +903,8 @@ function connectedUART() {
     gettingSlot = 0;
     try {
       sendUART("R 0\n");
-    }
-    catch (error) { // TIMEOUT WHILE TRYING TO GET ALL DATA
+    } catch (error) {
+      // TIMEOUT WHILE TRYING TO GET ALL DATA
       console.error(error);
       setStateToDisconnected(); // WE HAVE NO WORKINg COMMUNICATION, ASSUME DISCONNECTED
     }
@@ -757,8 +912,8 @@ function connectedUART() {
 }
 
 /********************************
-* SERIAL CONNECTION OPEN/CLOSE
-*********************************/
+ * SERIAL CONNECTION OPEN/CLOSE
+ *********************************/
 
 // IF THERE ARE ACCESSIBLE PORTS, IT RETURNS THE FIRST PORT FOUND
 async function getAvailablePort() {
@@ -776,8 +931,7 @@ async function getAvailablePort() {
   }
   if (portFound == null) {
     // console.log( "AVAILABLE PORT: NONE." );
-  }
-  else {
+  } else {
     console.log("AVAILABLE PORT: " + portFound);
   }
   return portFound;
@@ -788,14 +942,16 @@ async function hasAlreadyWorkingPort() {
   try {
     ports = await navigator.serial.getPorts();
     accessiblePort = ports[0];
-    if (accessiblePort != null && accessiblePort.connected && accessiblePort.readable) {
+    if (
+      accessiblePort != null &&
+      accessiblePort.connected &&
+      accessiblePort.readable
+    ) {
       return true;
-    }
-    else {
+    } else {
       return false;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
     return false;
   }
@@ -819,8 +975,7 @@ async function disconnectFromDevice() {
       console.log("PORT: CLOSED.");
       port = null;
       setStateToDisconnected();
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error);
     }
     spinnerShouldShow = false;
@@ -853,7 +1008,6 @@ async function releaseAllLocks() {
         console.warn("WRITABLE LOCKED: " + port.writable.locked);
       }
 
-
       if (port.readable && port.readable.locked) {
         readerAborter.abort();
         reader.cancel();
@@ -870,8 +1024,7 @@ async function releaseAllLocks() {
         console.info("WRITABLE LOCKED: " + port.writable.locked);
       }
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
   }
 }
@@ -880,78 +1033,89 @@ async function releaseAllLocks() {
 async function checkOpenPort() {
   // CHECKS IF WE HAVE PENDING UPDATES TO THE CONFIGURATION
   accessiblePort = await getAvailablePort();
-  if (accessiblePort) { // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
+  if (accessiblePort) {
+    // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
     port = accessiblePort;
-    console.log("PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED"));
+    console.log(
+      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED")
+    );
     console.log("PORT IS " + (accessiblePort.readable ? "OPEN" : "CLOSED"));
-    if (accessiblePort.connected) { // IS AT LEAST CONNECTED, TRY READING...
+    if (accessiblePort.connected) {
+      // IS AT LEAST CONNECTED, TRY READING...
       try {
-        if (!accessiblePort.readable) { // NOT READABLE TRY CLOSE AND REOPENING
+        if (!accessiblePort.readable) {
+          // NOT READABLE TRY CLOSE AND REOPENING
           // TRY RELEASING LOCKS
           await releaseAllLocks();
           // TRY OPENING DYSFUNCTIONAL PORT
           try {
             await accessiblePort.open({ baudRate: BAUD_RATE });
             const textDecoder = new TextDecoderStream();
-            readerAborter = new AbortController;
-            readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
+            readerAborter = new AbortController();
+            readableStreamClosed = accessiblePort.readable.pipeTo(
+              textDecoder.writable,
+              readerAborter
+            );
             reader = textDecoder.readable.getReader();
             // LAUNCH READ LOOP...
             readLoop();
             // FETCH INFOS FROM TAG
             connectedUART();
-          }
-          catch (error) {
+          } catch (error) {
             console.log(error);
             let errorString = "" + error;
             if (errorString.indexOf("NetworkError") > -1) {
-              alertShowWithInnerHtml("The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now.");
+              windowShowWithTypeAndTitleAndInnerHtml(
+                "ERROR",
+                "error",
+                "Port already in use.",
+                "The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now."
+              );
             }
           }
-        }
-        else { // READABLE, ALL FINE DO NOTHING
+        } else {
+          // READABLE, ALL FINE DO NOTHING
           // DO NOTHING
           port = accessiblePort;
         }
       } catch (error) {
         console.error(error);
       }
-    }
-    else { // NOT CONNECTED, TRY CONNECTION & READING
+    } else {
+      // NOT CONNECTED, TRY CONNECTION & READING
       try {
         // TRY RELEASING LOCKS
         await releaseAllLocks();
         await accessiblePort.open({ baudRate: BAUD_RATE });
         const textDecoder = new TextDecoderStream();
-        readerAborter = new AbortController;
-        readableStreamClosed = accessiblePort.readable.pipeTo(textDecoder.writable, readerAborter);
+        readerAborter = new AbortController();
+        readableStreamClosed = accessiblePort.readable.pipeTo(
+          textDecoder.writable,
+          readerAborter
+        );
         reader = textDecoder.readable.getReader();
         // LAUNCH READ LOOP...
         readLoop();
         // FETCH INFOS FROM TAG
         connectedUART();
-      }
-      catch (error) {
+      } catch (error) {
         console.error(error);
       }
     }
-  }
-  else {
+  } else {
     if (hasAlreadyWorkingPort()) {
       port = await getAvailablePort();
       // RE-READ INFOS FROM DEVICE...
       reconnectToDevice();
-    }
-    else {
+    } else {
       console.log("NO DEVICE CONNECTED.");
     }
   }
 }
 
-
 /********************************
-* DEVICE NAME HANDLING
-*********************************/
+ * DEVICE NAME HANDLING
+ *********************************/
 
 // TRIES TO FIND STORED NAME FOR DEVICE WITH PRODUCT ID
 function getDeviceName() {
@@ -961,19 +1125,21 @@ function getDeviceName() {
   let usbDeviceName = null;
   let isKnownDevice = false;
   let storedProductId = getLocalStore("usbProductId", false);
-  if ("" + usbProductId == "" + storedProductId) { // ALREADY KNOWN PRODUCT
+  if ("" + usbProductId == "" + storedProductId) {
+    // ALREADY KNOWN PRODUCT
     isKnownDevice = true;
     usbDeviceName = getLocalStore("knownDeviceName-" + usbProductId, true);
-  }
-  else { // STORE NEW INFO
+  } else {
+    // STORE NEW INFO
     isKnownDevice = false;
     setLocalStore("usbProductId", usbProductId, false);
   }
   let storedVendorId = getLocalStore("usbVendorId", false);
-  if ("" + usbVendorId == "" + storedVendorId) { // ALREADY KNOWN VENDOR
+  if ("" + usbVendorId == "" + storedVendorId) {
+    // ALREADY KNOWN VENDOR
     isKnownDevice = true;
-  }
-  else { // STORE NEW INFO
+  } else {
+    // STORE NEW INFO
     isKnownDevice = false;
     setLocalStore("usbVendorId", usbVendorId, false);
   }
@@ -988,12 +1154,14 @@ function askForDevicename() {
   const { usbProductId } = port.getInfo();
   if (usbProductId != undefined) {
     let placeholder = deviceName ? deviceName : "HSHB Name Tag";
-    let usbDeviceName = prompt("Please enter a name for your device", placeholder);
+    let usbDeviceName = prompt(
+      "Please enter a name for your device",
+      placeholder
+    );
     if (usbDeviceName != null) {
       if (usbDeviceName == "") {
         localStorage.removeItem("knownDeviceName-" + usbProductId);
-      }
-      else {
+      } else {
         setLocalStore("knownDeviceName-" + usbProductId, usbDeviceName, true);
       }
     }
@@ -1005,41 +1173,41 @@ function askForDevicename() {
 function setStateForDeviceName() {
   let usbDeviceName = getDeviceName();
   if (usbDeviceName != null) {
-    document.getElementById('devicename').innerHTML = usbDeviceName;
+    document.getElementById("devicename").innerHTML = usbDeviceName;
     toggleClassForElementWithIdTo("devicename", "devicenameshown");
-  }
-  else {
+  } else {
     // TRY TO REPLACE WITH MEANINGFUL STUFF
     if (port != null) {
       const { usbProductId, usbVendorId } = port.getInfo();
-      document.getElementById('devicename').innerHTML = "Unknown (prodId: " + usbProductId + " vendId: " + usbVendorId + ")";
-    }
-    else {
-      document.getElementById('devicename').innerHTML = "Unknown device";
+      document.getElementById("devicename").innerHTML =
+        "Unknown (prodId: " + usbProductId + " vendId: " + usbVendorId + ")";
+    } else {
+      document.getElementById("devicename").innerHTML = "Unknown device";
     }
     toggleClassForElementWithIdTo("devicename", "devicenameunknown");
   }
-
 }
 
 /********************************
-* CORE CONNECTION STATE HANDLING
-*********************************/
+ * CORE CONNECTION STATE HANDLING
+ *********************************/
 
 // PUTS THE WHOLE UI INTO INCOMPATIBLE STATE
 function setStateIncompatible() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo('status', "statusyellow");
-  document.getElementById('status').innerHTML = '(Incompatible)';
+  toggleClassForElementWithIdTo("status", "statusyellow");
+  document.getElementById("status").innerHTML = "(Incompatible)";
   // HELP TEXT
-  document.getElementById('help').innerHTML = 'Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.';
+  document.getElementById("help").innerHTML =
+    "Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.";
   // BUTTON
-  toggleClassForElementWithIdTo('connect', "unconnectable");
-  document.getElementById('connect').innerHTML = 'Connections via USB not supported by this Browser!';
+  toggleClassForElementWithIdTo("connect", "unconnectable");
+  document.getElementById("connect").innerHTML =
+    "Connections via USB not supported by this Browser!";
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
-  document.getElementById('devicename').innerHTML = "Unknown device";
+  document.getElementById("devicename").innerHTML = "Unknown device";
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;
@@ -1050,17 +1218,17 @@ function setStateIncompatible() {
 function setStateToDisconnected() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo('status', "statusred");
-  document.getElementById('status').innerHTML = '(Disconnected)';
+  toggleClassForElementWithIdTo("status", "statusred");
+  document.getElementById("status").innerHTML = "(Disconnected)";
   // BUTTON
-  toggleClassForElementWithIdTo('connect', "disconnected");
-  document.getElementById('connect').innerHTML = 'Connect via USB ...';
+  toggleClassForElementWithIdTo("connect", "disconnected");
+  document.getElementById("connect").innerHTML = "Connect via USB ...";
   // DISCONNECT BUTTON
-  toggleClassForElementWithIdTo('disconnectbutton', "disconnectbuttonhidden");
-  disconnectbutton
+  toggleClassForElementWithIdTo("disconnectbutton", "disconnectbuttonhidden");
+  disconnectbutton;
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
-  document.getElementById('devicename').innerHTML = "Unknown device";
+  document.getElementById("devicename").innerHTML = "Unknown device";
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;
@@ -1071,13 +1239,13 @@ function setStateToDisconnected() {
 function setStateToConnected() {
   spinnerShouldShow = false;
   // STATUS
-  toggleClassForElementWithIdTo('status', "statusgreen");
-  document.getElementById('status').innerHTML = '(Connected)';
+  toggleClassForElementWithIdTo("status", "statusgreen");
+  document.getElementById("status").innerHTML = "(Connected)";
   // BUTTON
-  toggleClassForElementWithIdTo('connect', "connected");
-  document.getElementById('connect').innerHTML = 'Connected via USB';
+  toggleClassForElementWithIdTo("connect", "connected");
+  document.getElementById("connect").innerHTML = "Connected via USB";
   // DISCONNECT BUTTON
-  toggleClassForElementWithIdTo('disconnectbutton', "disconnectbutton");
+  toggleClassForElementWithIdTo("disconnectbutton", "disconnectbutton");
   // DEVICE
   setStateForDeviceName();
   if (openPortCheckTimer == null) {
@@ -1091,27 +1259,25 @@ function isBrowserCompatible() {
     if (navigator && "serial" in navigator) {
       // DO NOTHIN WE ARE FINE
       return true;
-    }
-    else {
+    } else {
       setStateIncompatible();
       return false;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
     return false;
   }
 }
 
 /********************************
-* LAUNCH OF WEBSITE
-*********************************/
+ * LAUNCH OF WEBSITE
+ *********************************/
 
 // ASSEMBLE HTML CODE NEEDED TO FILL SITE FOR LAUNCH
 injectHtmlForSlotsToDOM();
 
 // ATTACH CLICK LISTENER TO CONNECT-BUTTON
-document.getElementById('connect').addEventListener('click', async () => {
+document.getElementById("connect").addEventListener("click", async () => {
   // REQUEST A PORT AND OPEN THE CONNECTION
   try {
     // REQUEST PORT IF WE HAVE NO PERMISSION TO A PORT YET (BROWSER WILL PRESENT LIST To SELECT FROM)
@@ -1119,47 +1285,29 @@ document.getElementById('connect').addEventListener('click', async () => {
     // TRY TO GET DEVICE NAME IF KNOWN
     setStateForDeviceName();
     reconnectToDevice();
-  }
-  catch (error) { // USER DID NOT PICK A PORT, NOTHING TO DO
-    if (hasAlreadyWorkingPort()) { // CHECK IF WE ARE ALREADY A PORT WITH PERMISSION
+  } catch (error) {
+    // USER DID NOT PICK A PORT, NOTHING TO DO
+    if (hasAlreadyWorkingPort()) {
+      // CHECK IF WE ARE ALREADY A PORT WITH PERMISSION
       port = getAvailablePort();
       // RE-READ INFOS FROM DEVICE INSTEAD
       reconnectToDevice();
-    }
-    else {
+    } else {
       console.error(error);
-      alertShowWithInnerHtml("Please select a serial port for your device from the list the browser presented to you.");
+      windowShowWithTypeAndTitleAndInnerHtml(
+        "INFO",
+        "info",
+        "No serial- / USB-port selected.",
+        "Please select a serial port for your device from the list the browser presented to you."
+      );
     }
   }
 });
-
-
-// ADD EVENT LISTENER TO UPLOAD WINDOW
-/*
-document.getElementById('uploadForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent the default form submission
-
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert('Please choose a file!');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    uploadFile(formData);
-});
-*/
-
 
 // CHECK IF RIGHT/COMPATIBLE BROWSER, IF NOT SHOW THAT TO USER
 if (!isBrowserCompatible()) {
   console.log("ERROR: BROWSER DOES NOT PROVIDE WEB SERIAL-/USB-API.");
-}
-else {
+} else {
   // ADD BROWSER-LISTENER WHAT TO DO IN CASE WE RE-/CONNECT TO DEVICE
   navigator.serial.addEventListener("connect", (event) => {
     setStateToConnected();
@@ -1174,12 +1322,11 @@ else {
     port = getAvailablePort();
     // RE-READ INFOS FROM DEVICE...
     reconnectToDevice();
-  }
-  else {
+  } else {
     // USER HAS TO MANUALLY CLICK BUTTON TO SELECT A SERIAL PORT
   }
 }
 
 /********************************
-* LEGACY STUFF
-*********************************/
+ * LEGACY STUFF
+ *********************************/

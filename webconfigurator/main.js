@@ -132,6 +132,13 @@ class DeviceSlot {
   static MAX_CHAR_SCALE = 5;
   static MIN_DURATION = 1;
   static MAX_DURATION = 60;
+  static TITLE_TYPE = "Choose if text should be displayed as fixed text or as scrolling text.";
+  static TITLE_TEXT = "Enter the text which should be statically displayed or scrolled. Short text should be static, long texts should be scrolled.";
+  static TITLE_OFFSET_X = "Offset defines the amount of pixels (LEDs) from the left edge to start placing fixed text. Scroll Interval defines a delay for scrolling speed, 0 means fastest speed.";
+  static TITLE_CHAR_SPACE = "The amount of pixels (LEDs) between each text character displayed.";
+  static TITLE_CHAR_SCALE = "The multiplier for the width of a character. 2 means double the width for each character.";
+  static TITLE_DURATION = "Duration in seconds a static text should be displayed. Scroll cycles defines the amount of iterations the text gets scrolled through.";
+  static TITLE_ANIMATION = "The animation effect which will be shown on the upper logo part of the badge.";
 
   constructor(
     slotId,
@@ -186,28 +193,28 @@ class DeviceSlot {
     html += `<h3 style="display:inline" id="slot-name-${i}" class=""><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
     html += `<div id="slot-content-${i}" style="display:none">`;
     html += `<fieldset><legend>Movement, spacing & character width</legend>`;
-    html += `<label for="textType-${i}">Type</label>`;
+    html += `<label for="textType-${i}" title="${DeviceSlot.TITLE_TYPE}">Type</label>`;
     html += `<select id="textType-${i}" onChange="setTextOptionsForSlot(${i});dirty();">`;
     html += `<option id="textTypeOption-${i}-0" value="0">None</option>`;
     html += `<option id="textTypeOption-${i}-1" value="1">Static</option>`;
     html += `<option id="textTypeOption-${i}-2" value="2">Scrolling</option>`;
     html += `</select>`;
-    html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>`;
+    html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}" title="${DeviceSlot.TITLE_OFFSET_X}">X-Offset</label>`;
     html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${DeviceSlot.MIN_OFFSET_X}" max="${DeviceSlot.MAX_OFFSET_X}" value="${this.xOffset}" onchange="dirty();"> `;
-    html += `&nbsp;<label for="char-space-${i}">Char Space</label>`;
+    html += `&nbsp;<label for="char-space-${i}" title="${DeviceSlot.TITLE_CHAR_SPACE}">Char Space</label>`;
     html += `<input type="number" class="numInput" id="char-space-${i}" min="${DeviceSlot.MIN_CHAR_SPACE}" max="${DeviceSlot.MAX_CHAR_SPACE}" value="${this.charSpace}" onchange="dirty();"> `;
-    html += `&nbsp;<label for="char-scaler-${i}">Char Scaler</label>`;
+    html += `&nbsp;<label for="char-scaler-${i}" title="${DeviceSlot.TITLE_CHAR_SCALE}">Char Scaler</label>`;
     html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${DeviceSlot.MIN_CHAR_SCALE}" max="${DeviceSlot.MAX_CHAR_SCALE}" value="${this.charScale}" onchange="dirty();">`;
     html += `</fieldset>`;
     html += `<div id="text-options-${i}">`;
-    html += `<fieldset><legend id="scrolltextinfo-${i}">Text for display (can be up to ${DeviceSlot.MAX_TEXT_LENGTH} chars...)</legend>`;
+    html += `<fieldset><legend id="scrolltextinfo-${i}" title="${DeviceSlot.TITLE_TEXT}">Text for display (can be up to ${DeviceSlot.MAX_TEXT_LENGTH} chars...)</legend>`;
     html += `<input type="text" id="text-${i}" size="${DeviceSlot.MAX_TEXT_LENGTH}" maxlength="${DeviceSlot.MAX_TEXT_LENGTH}" value="${this.text}" placeholder="Text to display goes here..." oninput="dirty();showRemainingChars(${i});">`;
     html += `</fieldset>`;
     html += `</div>`;
     html += `<fieldset><legend>Animation options</legend>`;
-    html += `<label id="duration-label-${i}" for="duration-${i}">Duration seconds</label>`;
+    html += `<label id="duration-label-${i}" for="duration-${i}" title="${DeviceSlot.TITLE_DURATION}">Duration seconds</label>`;
     html += `<input type="number" class="numInput" id="duration-${i}" min="${DeviceSlot.MIN_DURATION}" max="${DeviceSlot.MAX_DURATION}" value="${this.duration}" onchange="dirty();"> `;
-    html += `&nbsp;<label for="animation-${i}">Animation</label>`;
+    html += `&nbsp;<label for="animation-${i}" title="${DeviceSlot.TITLE_ANIMATION}">Animation</label>`;
     html += `<select id="animation-${i}" onchange="dirty();">`;
     html += `<option id="animationOption-${i}-0" value="0">Static Off</option>`;
     html += `<option id="animationOption-${i}-1" value="1">Static On</option>`;
@@ -689,7 +696,7 @@ function writeSlot(slt) {
 
 // SHOW AND HIDE SMALL GREEN CHECKMARK
 function writeConfirmation(slt) {
-  if( writingData ) {
+  if (writingData) {
     scrollToElementWithId(`slot-name-${slt + 1}`);
   }
 

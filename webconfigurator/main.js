@@ -107,7 +107,7 @@ DeviceSet.fromJSON = function (json) {
     json.META.AUTHOR,
     json.META.DEVICE,
     json.META.DATECREATED,
-    json.META.DATECHANGED
+    json.META.DATECHANGED,
   );
   json.slots.forEach((slot, i) => {
     // console.warn( ""+slot );
@@ -132,13 +132,20 @@ class DeviceSlot {
   static MAX_CHAR_SCALE = 5;
   static MIN_DURATION = 1;
   static MAX_DURATION = 60;
-  static TITLE_TYPE = "Choose if text should be displayed as fixed text or as scrolling text.";
-  static TITLE_TEXT = "Enter the text which should be statically displayed or scrolled. Short text should be static, long texts should be scrolled.";
-  static TITLE_OFFSET_X = "Offset defines the amount of pixels (LEDs) from the left edge to start placing fixed text. Scroll Interval defines a delay for scrolling speed, 0 means fastest speed.";
-  static TITLE_CHAR_SPACE = "The amount of pixels (LEDs) between each text character displayed.";
-  static TITLE_CHAR_SCALE = "The multiplier for the width of a character. 2 means double the width for each character.";
-  static TITLE_DURATION = "Duration in seconds a static text should be displayed. Scroll cycles defines the amount of iterations the text gets scrolled through.";
-  static TITLE_ANIMATION = "The animation effect which will be shown on the upper logo part of the badge.";
+  static TITLE_TYPE =
+    "Choose if text should be displayed as fixed text or as scrolling text.";
+  static TITLE_TEXT =
+    "Enter the text which should be statically displayed or scrolled. Short text should be static, long texts should be scrolled.";
+  static TITLE_OFFSET_X =
+    "Offset defines the amount of pixels (LEDs) from the left edge to start placing fixed text. Scroll Interval defines a delay for scrolling speed, 0 means fastest speed.";
+  static TITLE_CHAR_SPACE =
+    "The amount of pixels (LEDs) between each text character displayed.";
+  static TITLE_CHAR_SCALE =
+    "The multiplier for the width of a character. 2 means double the width for each character.";
+  static TITLE_DURATION =
+    "Duration in seconds a static text should be displayed. Scroll cycles defines the amount of iterations the text gets scrolled through.";
+  static TITLE_ANIMATION =
+    "The animation effect which will be shown on the upper logo part of the badge.";
 
   constructor(
     slotId,
@@ -149,7 +156,7 @@ class DeviceSlot {
     text,
     duration,
     animationId,
-    active
+    active,
   ) {
     this.slotId = slotId;
     this.textTypeId = textTypeId;
@@ -244,7 +251,7 @@ DeviceSlot.fromJSON = function (json) {
     json.text,
     json.duration,
     json.animationId,
-    json.active
+    json.active,
   );
 };
 
@@ -268,7 +275,7 @@ function editConfigName() {
   let placeholder = defaultSet().displayName;
   let configName = prompt(
     "Please enter a name for your configuration set",
-    placeholder
+    placeholder,
   );
   if (configName != null) {
     defaultSet().displayName = configName;
@@ -287,7 +294,7 @@ function hasTouchedOrChangedTheConfigurationData() {
   }
   prepareDownloadTimer = setTimeout(
     configurationSynchronize,
-    TIMEINTERVAL_WAIT_FOR_DOWNLOAD
+    TIMEINTERVAL_WAIT_FOR_DOWNLOAD,
   );
   toggleClassForElementWithIdTo("download", "downloadhidden");
   toggleClassForElementWithIdTo("share", "sharehidden");
@@ -323,8 +330,9 @@ function showRemainingChars(slotId) {
 function prepareDownload() {
   const nowDate = new Date();
   const nowTime = nowDate.getTime();
-  const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1
-    }-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
+  const formattedDate = `${nowDate.getDate()}-${
+    nowDate.getMonth() + 1
+  }-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
   const downloadButton = document.getElementById("download");
   defaultSet().META.DATECHANGED = nowDate;
   let dataToDownload = defaultSet().json();
@@ -355,8 +363,8 @@ function showEmbedShare() {
     "share",
     "Copied to clipboard.",
     "<code style='word-break:break-all;'>" +
-    escapeHtml(shareButton.value) +
-    "</code>"
+      escapeHtml(shareButton.value) +
+      "</code>",
   );
   navigator.clipboard.writeText(shareButton.value);
 }
@@ -368,7 +376,7 @@ function prepareUpload() {
     "IMPORT",
     "info",
     "Please choose one .json configuration file stored to be imported.",
-    htmlInjection
+    htmlInjection,
   );
   let inputElement = document.getElementById("fileinput");
   inputElement.addEventListener("change", checkFiles, false);
@@ -482,7 +490,9 @@ async function configurationSynchronize() {
 
     slot.text = document.getElementById("text-" + i).value;
     slot.duration = Number(document.getElementById("duration-" + i).value);
-    slot.xOffset = Number(document.getElementById("offset-interval-" + i).value);
+    slot.xOffset = Number(
+      document.getElementById("offset-interval-" + i).value,
+    );
     slot.charScale = Number(document.getElementById("char-scaler-" + i).value);
     slot.charSpace = Number(document.getElementById("char-space-" + i).value);
     slot.active = document.getElementById("active-" + i).checked;
@@ -521,11 +531,10 @@ document.getElementById("version").innerHTML =
 function scrollToElementWithId(element_id) {
   try {
     let targetElement = document.getElementById(element_id);
-    scrollOptions = { "behavior": "smooth", "block": "center", "inline": "nearest" };
+    scrollOptions = { behavior: "smooth", block: "center", inline: "nearest" };
     targetElement.scrollIntoView(scrollOptions);
-  }
-  catch (error) {
-    // do nothing 
+  } catch (error) {
+    // do nothing
   }
 }
 
@@ -534,7 +543,7 @@ function windowShowWithTypeAndTitleAndInnerHtml(
   title,
   type,
   footer,
-  html_content
+  html_content,
 ) {
   document.getElementById("windowtitle").innerHTML = title;
   document.getElementById("windowfooter").innerHTML = footer;
@@ -594,7 +603,7 @@ function withTimeout(promise, timeout) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout")), timeout)
+      setTimeout(() => reject(new Error("Timeout")), timeout),
     ),
   ]);
 }
@@ -642,7 +651,7 @@ function askWriteAllSlots() {
   if (port == null) return;
   if (
     confirm(
-      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!"
+      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!",
     )
   ) {
     writeAllSlots();
@@ -822,8 +831,7 @@ function receiveUART(msg) {
         document.getElementById("textType-" + slot).value = 0;
         document.getElementById("animation-" + slot).value = dat[0];
         document.getElementById("duration-" + slot).value = dat[1];
-      }
-      else {
+      } else {
         document.getElementById("text-" + slot).value = slotText;
         document.getElementById("animation-" + slot).value = dat[1];
         document.getElementById("duration-" + slot).value = dat[2];
@@ -877,8 +885,8 @@ async function sendUART(msg) {
         "error",
         "An error occurred while trying to send data.",
         "SENDING TO DEVICE FAILED.<br><br><code>" +
-        msg +
-        "</code><br><br>NOT SENT, LOST CONNECTION."
+          msg +
+          "</code><br><br>NOT SENT, LOST CONNECTION.",
       );
     }
   } else {
@@ -1032,7 +1040,7 @@ async function checkOpenPort() {
     // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
     port = accessiblePort;
     console.log(
-      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED")
+      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED"),
     );
     console.log("PORT IS " + (accessiblePort.readable ? "OPEN" : "CLOSED"));
     if (accessiblePort.connected) {
@@ -1049,7 +1057,7 @@ async function checkOpenPort() {
             readerAborter = new AbortController();
             readableStreamClosed = accessiblePort.readable.pipeTo(
               textDecoder.writable,
-              readerAborter
+              readerAborter,
             );
             reader = textDecoder.readable.getReader();
             // LAUNCH READ LOOP...
@@ -1064,7 +1072,7 @@ async function checkOpenPort() {
                 "ERROR",
                 "error",
                 "Port already in use.",
-                "The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now."
+                "The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now.",
               );
             }
           }
@@ -1086,7 +1094,7 @@ async function checkOpenPort() {
         readerAborter = new AbortController();
         readableStreamClosed = accessiblePort.readable.pipeTo(
           textDecoder.writable,
-          readerAborter
+          readerAborter,
         );
         reader = textDecoder.readable.getReader();
         // LAUNCH READ LOOP...
@@ -1151,7 +1159,7 @@ function askForDevicename() {
     let placeholder = deviceName ? deviceName : "HSHB Name Tag";
     let usbDeviceName = prompt(
       "Please enter a name for your device",
-      placeholder
+      placeholder,
     );
     if (usbDeviceName != null) {
       if (usbDeviceName == "") {
@@ -1293,7 +1301,7 @@ document.getElementById("connect").addEventListener("click", async () => {
         "INFO",
         "info",
         "No serial- / USB-port selected.",
-        "Please select a serial port for your device from the list the browser presented to you."
+        "Please select a serial port for your device from the list the browser presented to you.",
       );
     }
   }

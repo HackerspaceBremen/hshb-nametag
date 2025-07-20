@@ -2,10 +2,12 @@
 const TIMEOUT_NO_MORE_DATA_EXPECTED = 50; // millis
 const TIMEINTERVAL_SPINNER = 100; // millis
 const TIMEINTERVAL_PORTS = 10000; // millis
+const TIMEINTERVAL_WAIT_FOR_DOWNLOAD = 2000; // millis
 const MAX_NUM_SLOTS = 10;
 const BAUD_RATE = 9600;
 let openPortCheckTimer = null;
 let spinnerCheckTimer = null;
+let prepareDownloadTimer = null;
 let spinnerShouldShow = false;
 let gettingData = false;
 let gettingSlot = 0;
@@ -19,8 +21,9 @@ let readerAborter = null;
 let writer = null;
 let messageBuffer = "";
 let timeoutId = null;
-const slotsContainer = document.getElementById("slots");
 let defaultDeviceConfigurationSet = null;
+let shouldPrepareDownloadAfterChange = false;
+const slotsContainer = document.getElementById("slots");
 
 /********************************
  * PLANNED FEATURES / FUTURE
@@ -28,15 +31,42 @@ let defaultDeviceConfigurationSet = null;
 /*
 
 - export setup as JSON [DONE]
-- save a setup of all slots under a NAME in localStorage
-- retrieve a setup and send to device
-- import setup from JSON/file etc.
+- save a setup of all slots under a NAME in localStorage [CANCELLED]
+- save a setup of all slots as a local file which can be shared easily [DONE]
+- load/import a setup to send it to device [DONE]
+- import setup from JSON/file etc. [DONE]
+- better unified window overlay [DONE]
 - simulated effects-preview for the slots configured
 
 */
 
+/********************************
+ * CONFIGURATION DATA MODEL CLASSES
+ *********************************/
+
+// CARRIES META DATA ABOUT FILE FORMAT VERSION
+class DeviceSetMeta {
+  // METADATA FOR FILE FORMAT
+  static VERSION = "2.0";
+  FILE_VERSION = DeviceSetMeta.VERSION;
+  AUTHOR = "blazr";
+  DEVICE = "HSHB LED Tag";
+  DATECREATED = new Date();
+  DATECHANGED = null;
+
+  constructor(FILE_VERSION, AUTHOR, DEVICE, DATECREATED, DATECHANGED) {
+    this.FILE_VERSION = FILE_VERSION;
+    this.AUTHOR = AUTHOR;
+    this.DEVICE = DEVICE;
+    this.DATECREATED = DATECREATED;
+    this.DATECHANGED = DATECHANGED;
+  }
+}
+
 // CLASS DEFINING AN EFFECT SETUP
 class DeviceSet {
+  META = null;
+
   constructor(displayName, uniqueIdentifier) {
     this.displayName = displayName;
     if (uniqueIdentifier == null) {
@@ -45,6 +75,7 @@ class DeviceSet {
       this.uniqueIdentifier = uniqueIdentifier;
     }
     this.slots = [];
+    this.META = new DeviceSetMeta();
   }
 
   json() {
@@ -68,17 +99,46 @@ class DeviceSet {
   }
 }
 
+// CLASS FUNCTION TO DESERIALIZE A NEW SETUP FROm JSON
+DeviceSet.fromJSON = function (json) {
+  let deviceSet = new DeviceSet(json.displayName, json.uniqueIdentifier);
+  deviceSet.META = new DeviceSetMeta(
+    json.META.FILE_VERSION,
+    json.META.AUTHOR,
+    json.META.DEVICE,
+    json.META.DATECREATED,
+    json.META.DATECHANGED
+  );
+  json.slots.forEach((slot, i) => {
+    // console.warn( ""+slot );
+    let slotToAdd = DeviceSlot.fromJSON(slot);
+    // slotToAdd.debug();
+    deviceSet.addSlot(slotToAdd);
+  });
+  return deviceSet;
+};
+
 // CLASS DEFINING ONE SLOT
 class DeviceSlot {
-  // CLASS CONSTANTS
-  minOffsetX = 0;
-  maxOffsetX = 255;
-  minCharSpace = 0;
-  maxCharSpace = 60;
-  minCharScale = 1;
-  maxCharScale = 5;
-  minDuration = 1;
-  maxDuration = 5;
+  // CLASS CONSTANTS DEFINING VALUE LIMITS
+  static MAX_NUM_TEXT_TYPE_IDS = 3;
+  static MAX_NUM_ANIMATION_IDS = 10;
+  static MAX_TEXT_LENGTH = 75;
+  static MIN_OFFSET_X = 0;
+  static MAX_OFFSET_X = 255;
+  static MIN_CHAR_SPACE = 0;
+  static MAX_CHAR_SPACE = 60;
+  static MIN_CHAR_SCALE = 1;
+  static MAX_CHAR_SCALE = 5;
+  static MIN_DURATION = 1;
+  static MAX_DURATION = 60;
+  static TITLE_TYPE = "Choose if text should be displayed as fixed text or as scrolling text.";
+  static TITLE_TEXT = "Enter the text which should be statically displayed or scrolled. Short text should be static, long texts should be scrolled.";
+  static TITLE_OFFSET_X = "Offset defines the amount of pixels (LEDs) from the left edge to start placing fixed text. Scroll Interval defines a delay for scrolling speed, 0 means fastest speed.";
+  static TITLE_CHAR_SPACE = "The amount of pixels (LEDs) between each text character displayed.";
+  static TITLE_CHAR_SCALE = "The multiplier for the width of a character. 2 means double the width for each character.";
+  static TITLE_DURATION = "Duration in seconds a static text should be displayed. Scroll cycles defines the amount of iterations the text gets scrolled through.";
+  static TITLE_ANIMATION = "The animation effect which will be shown on the upper logo part of the badge.";
 
   constructor(
     slotId,
@@ -89,6 +149,7 @@ class DeviceSlot {
     text,
     duration,
     animationId,
+    active
   ) {
     this.slotId = slotId;
     this.textTypeId = textTypeId;
@@ -98,7 +159,7 @@ class DeviceSlot {
     this.text = text;
     this.duration = duration;
     this.animationId = animationId;
-    this.active = false;
+    this.active = active;
   }
 
   debug() {
@@ -129,42 +190,42 @@ class DeviceSlot {
     const slotDiv = document.createElement("div");
     slotDiv.className = "slot";
     let html = "";
-    html += `<h3 style="display:inline"><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
+    html += `<h3 style="display:inline" id="slot-name-${i}" class=""><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>`;
     html += `<div id="slot-content-${i}" style="display:none">`;
     html += `<fieldset><legend>Movement, spacing & character width</legend>`;
-    html += `<label for="textType-${i}">Type</label>`;
-    html += `<select id="textType-${i}" value="${this.textType}" onChange="setTextOptionsForSlot(${i})">`;
-    html += `<option value="0" ${this.selectedTextTypeForId(0)}>None</option>`;
-    html += `<option value="1" ${this.selectedTextTypeForId(1)}>Static</option>`;
-    html += `<option value="2" ${this.selectedTextTypeForId(2)}>Scrolling</option>`;
+    html += `<label for="textType-${i}" title="${DeviceSlot.TITLE_TYPE}">Type</label>`;
+    html += `<select id="textType-${i}" onChange="setTextOptionsForSlot(${i});dirty();">`;
+    html += `<option id="textTypeOption-${i}-0" value="0">None</option>`;
+    html += `<option id="textTypeOption-${i}-1" value="1">Static</option>`;
+    html += `<option id="textTypeOption-${i}-2" value="2">Scrolling</option>`;
     html += `</select>`;
-    html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>`;
-    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${this.minOffsetX}" max="${this.maxOffsetX}" value="${this.xOffset}"> `;
-    html += `&nbsp;<label for="char-space-${i}">Char Space</label>`;
-    html += `<input type="number" class="numInput" id="char-space-${i}" min="${this.minCharSpace}" max="${this.maxCharSpace}" value="${this.charSpace}"> `;
-    html += `&nbsp;<label for="char-scaler-${i}">Char Scaler</label>`;
-    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${this.minCharScale}" max="${this.maxCharScale}" value="${this.charScale}">`;
+    html += `&nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}" title="${DeviceSlot.TITLE_OFFSET_X}">X-Offset</label>`;
+    html += `<input type="number" class="numInput" id="offset-interval-${i}" min="${DeviceSlot.MIN_OFFSET_X}" max="${DeviceSlot.MAX_OFFSET_X}" value="${this.xOffset}" onchange="dirty();"> `;
+    html += `&nbsp;<label for="char-space-${i}" title="${DeviceSlot.TITLE_CHAR_SPACE}">Char Space</label>`;
+    html += `<input type="number" class="numInput" id="char-space-${i}" min="${DeviceSlot.MIN_CHAR_SPACE}" max="${DeviceSlot.MAX_CHAR_SPACE}" value="${this.charSpace}" onchange="dirty();"> `;
+    html += `&nbsp;<label for="char-scaler-${i}" title="${DeviceSlot.TITLE_CHAR_SCALE}">Char Scaler</label>`;
+    html += `<input type="number" class="numInput" id="char-scaler-${i}" min="${DeviceSlot.MIN_CHAR_SCALE}" max="${DeviceSlot.MAX_CHAR_SCALE}" value="${this.charScale}" onchange="dirty();">`;
     html += `</fieldset>`;
     html += `<div id="text-options-${i}">`;
-    html += `<fieldset><legend>Text for display (can be up to 75 chars...)</legend>`;
-    html += `<input type="text" id="text-${i}" size="75" maxlength="75" value="${this.text}" placeholder="Text to display goes here...">`;
+    html += `<fieldset><legend id="scrolltextinfo-${i}" title="${DeviceSlot.TITLE_TEXT}">Text for display (can be up to ${DeviceSlot.MAX_TEXT_LENGTH} chars...)</legend>`;
+    html += `<input type="text" id="text-${i}" size="${DeviceSlot.MAX_TEXT_LENGTH}" maxlength="${DeviceSlot.MAX_TEXT_LENGTH}" value="${this.text}" placeholder="Text to display goes here..." oninput="dirty();showRemainingChars(${i});">`;
     html += `</fieldset>`;
     html += `</div>`;
     html += `<fieldset><legend>Animation options</legend>`;
-    html += `<label id="duration-label-${i}" for="duration-${i}">Duration seconds</label>`;
-    html += `<input type="number" class="numInput" id="duration-${i}" min="${this.minDuration}" max="${this.maxnDuration}" value="${this.duration}"> `;
-    html += `&nbsp;<label for="animation-${i}">Animation</label>`;
-    html += `<select id="animation-${i}">`;
-    html += `<option value="0" ${this.selectedAnimationForId(0)}>Static Off</option>`;
-    html += `<option value="1" ${this.selectedAnimationForId(1)}>Static On</option>`;
-    html += `<option value="2" ${this.selectedAnimationForId(2)}>Matrix</option>`;
-    html += `<option value="3" ${this.selectedAnimationForId(3)}>Sweep</option>`;
-    html += `<option value="4" ${this.selectedAnimationForId(4)}>Wave</option>`;
-    html += `<option value="5" ${this.selectedAnimationForId(5)}>Lines</option>`;
-    html += `<option value="6" ${this.selectedAnimationForId(6)}>Lines Fill</option>`;
-    html += `<option value="7" ${this.selectedAnimationForId(7)}>Rotate</option>`;
-    html += `<option value="8" ${this.selectedAnimationForId(8)}>Rotate Fill</option>`;
-    html += `<option value="9" ${this.selectedAnimationForId(9)}>Circles</option>`;
+    html += `<label id="duration-label-${i}" for="duration-${i}" title="${DeviceSlot.TITLE_DURATION}">Duration seconds</label>`;
+    html += `<input type="number" class="numInput" id="duration-${i}" min="${DeviceSlot.MIN_DURATION}" max="${DeviceSlot.MAX_DURATION}" value="${this.duration}" onchange="dirty();"> `;
+    html += `&nbsp;<label for="animation-${i}" title="${DeviceSlot.TITLE_ANIMATION}">Animation</label>`;
+    html += `<select id="animation-${i}" onchange="dirty();">`;
+    html += `<option id="animationOption-${i}-0" value="0">Static Off</option>`;
+    html += `<option id="animationOption-${i}-1" value="1">Static On</option>`;
+    html += `<option id="animationOption-${i}-2" value="2">Matrix</option>`;
+    html += `<option id="animationOption-${i}-3" value="3">Sweep</option>`;
+    html += `<option id="animationOption-${i}-4" value="4">Wave</option>`;
+    html += `<option id="animationOption-${i}-5" value="5">Lines</option>`;
+    html += `<option id="animationOption-${i}-6" value="6">Lines Fill</option>`;
+    html += `<option id="animationOption-${i}-7" value="7">Rotate</option>`;
+    html += `<option id="animationOption-${i}-8" value="8">Rotate Fill</option>`;
+    html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;
@@ -172,54 +233,274 @@ class DeviceSlot {
   }
 }
 
-// GET THE DEFAULT DEVICE CONFIG SET
+// CLASS FUNCTION TO DESERIALIZE A NEW SLOT FROM JSON
+DeviceSlot.fromJSON = function (json) {
+  return new DeviceSlot(
+    json.slotId,
+    json.textTypeId,
+    json.xOffset,
+    json.charSpace,
+    json.charScale,
+    json.text,
+    json.duration,
+    json.animationId,
+    json.active
+  );
+};
+
+/********************************
+ * CONFIGURATION SETUP HANDLING
+ *********************************/
+
+// GET THE CURRENT ACTIVE DEVICE CONFIG
 function defaultSet() {
   if (defaultDeviceConfigurationSet == null) {
     defaultDeviceConfigurationSet = new DeviceSet("Default", null);
     for (let i = 0; i < MAX_NUM_SLOTS; i++) {
-      let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1);
+      let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1, false);
       defaultDeviceConfigurationSet.addSlot(currentSlot);
     }
   }
   return defaultDeviceConfigurationSet;
 }
 
+function editConfigName() {
+  let placeholder = defaultSet().displayName;
+  let configName = prompt(
+    "Please enter a name for your configuration set",
+    placeholder
+  );
+  if (configName != null) {
+    defaultSet().displayName = configName;
+    hasTouchedOrChangedTheConfigurationData();
+    document.getElementById("setselector").textContent =
+      defaultSet().displayName;
+  } else {
+    // do nothing
+  }
+}
+
+// MARKS CONFIGURATION AS DIRTY, WE NED TO PREPARE NEW CONFIG DOWNLOAD
+function hasTouchedOrChangedTheConfigurationData() {
+  if (prepareDownloadTimer) {
+    clearTimeout(prepareDownloadTimer);
+  }
+  prepareDownloadTimer = setTimeout(
+    configurationSynchronize,
+    TIMEINTERVAL_WAIT_FOR_DOWNLOAD
+  );
+  toggleClassForElementWithIdTo("download", "downloadhidden");
+  toggleClassForElementWithIdTo("share", "sharehidden");
+}
+
+// SHORTER NAME FOR HANDLERS
+function dirty() {
+  hasTouchedOrChangedTheConfigurationData();
+}
+
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function showRemainingChars(slotId) {
+  let textField = document.getElementById("text-" + slotId);
+  let textInfo = document.getElementById("scrolltextinfo-" + slotId);
+  let charsRemaining = DeviceSlot.MAX_TEXT_LENGTH - textField.value.length;
+  textInfo.textContent =
+    "Text for display (can be up to " +
+    DeviceSlot.MAX_TEXT_LENGTH +
+    " chars... " +
+    charsRemaining +
+    " remaining)";
+}
+
+// TRANSFORM DATA INTO DATA-URL FOR DOWNLOAD FROM CURRENT CONFIG SET
 function prepareDownload() {
   const nowDate = new Date();
   const nowTime = nowDate.getTime();
-  const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1}-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
+  const formattedDate = `${nowDate.getDate()}-${nowDate.getMonth() + 1
+    }-${nowDate.getFullYear()}-${nowDate.getHours()}-${nowDate.getMinutes()}`;
   const downloadButton = document.getElementById("download");
+  defaultSet().META.DATECHANGED = nowDate;
   let dataToDownload = defaultSet().json();
   downloadButton.href =
     "data:application/octet-stream;base64," + btoa(dataToDownload);
   downloadButton.download = "hshb-tag-configuration-" + formattedDate + ".json";
   toggleClassForElementWithIdTo("download", "download");
+  const shareButton = document.getElementById("share");
+  let embedShareText =
+    '<a href="data:application/octet-stream;base64,' +
+    btoa(dataToDownload) +
+    '" download="' +
+    "shared-configuration-" +
+    formattedDate +
+    ".json" +
+    '">' +
+    defaultSet().displayName +
+    "</a>";
+  shareButton.value = embedShareText;
+  toggleClassForElementWithIdTo("share", "share");
 }
 
-// PULLS VALUES OUT OF SLOT FORMFIELDS
+// SHOW WINDOW WHERE EMBED CODE IS SHOWN
+function showEmbedShare() {
+  const shareButton = document.getElementById("share");
+  windowShowWithTypeAndTitleAndInnerHtml(
+    "SHARE",
+    "share",
+    "Copied to clipboard.",
+    "<code style='word-break:break-all;'>" +
+    escapeHtml(shareButton.value) +
+    "</code>"
+  );
+  navigator.clipboard.writeText(shareButton.value);
+}
+
+// SHOW UPLOAD/IMPORT WINDOW
+function prepareUpload() {
+  let htmlInjection = `<form><input type="file" id="fileinput" /><div id="uploadStatus" style="margin-top:20px;margin-bottom:20px;">&nbsp;</div></form>`;
+  windowShowWithTypeAndTitleAndInnerHtml(
+    "IMPORT",
+    "info",
+    "Please choose one .json configuration file stored to be imported.",
+    htmlInjection
+  );
+  let inputElement = document.getElementById("fileinput");
+  inputElement.addEventListener("change", checkFiles, false);
+}
+
+// EXECUTED TO IMPORT A CONFIGURATION AS JSON
+async function checkFiles() {
+  let fileList = this.files;
+  if (fileList == null || fileList == undefined) return;
+  // console.log( "FILE: GOT LIST..." );
+  let numFiles = fileList.length;
+  // console.log( "FILE: "+numFiles+" FILES" );
+  let selectedFile = this.files[0];
+  // console.log( "FILE: "+selectedFile );
+  console.log("FILE NAME: " + selectedFile.name);
+  console.log("FILE SIZE: " + selectedFile.size);
+  console.log("FILE TYPE: " + selectedFile.type);
+  if (selectedFile.type == "application/json") {
+    // PROCESS FILE
+    // Read the file
+    const reader = new FileReader();
+    reader.onload = () => {
+      let importedSet = null;
+      try {
+        importedJson = JSON.parse(reader.result);
+        importedSet = DeviceSet.fromJSON(importedJson);
+      } catch (error) {
+        let detectedFileVersion = null;
+        try {
+          if ("META" in importedJson) {
+            if ("FILE_VERSION" in importedJson.META) {
+              detectedFileVersion = importedJson.META.FILE_VERSION;
+            }
+          }
+        } catch (error) {
+          // do nothing
+        }
+        if (detectedFileVersion != null) {
+          document.getElementById("uploadStatus").textContent =
+            "ERROR: Configuration file not readable.<br>Detected file format uses version " +
+            detectedFileVersion +
+            ", but this configurator is already on version " +
+            DeviceSetMeta.VERSION +
+            ". Maybe the format is incompatible.";
+        } else {
+          document.getElementById("uploadStatus").innerHTML =
+            "ERROR: Configuration file not readable/parsable.<br><code>" +
+            error +
+            "</code>";
+        }
+        console.error(error);
+      }
+      if (importedSet != null) {
+        document.getElementById("uploadStatus").innerHTML =
+          "Imported successfully.";
+        let inputElement = document.getElementById("fileinput");
+        inputElement.value = null;
+        defaultDeviceConfigurationSet = importedSet;
+        document.getElementById("window").style.display = "none";
+        loadDeviceSetIntoUI(defaultSet());
+        prepareDownload();
+      } else {
+        document.getElementById("uploadStatus").innerHTML =
+          "Data was empty. Nothing imported!";
+      }
+    };
+    reader.onerror = () => {
+      document.getElementById("uploadStatus").textContent =
+        "Error reading the file. Please try again.";
+    };
+    reader.readAsText(selectedFile);
+  } else {
+    document.getElementById("uploadStatus").textContent =
+      "Wrong file format! Please upload .json files only.";
+  }
+}
+
+// APPLIES AN IMPORTED SETUP TO THE USER INTERFACE
+function loadDeviceSetIntoUI(deviceconfiguration) {
+  document.getElementById("setselector").textContent =
+    deviceconfiguration.displayName;
+  // ITERATE OVER ALL SLOTS AND APPLY VALUES TO UI
+  slotsContainer.innerHTML =
+    "<h2 class='blink'>Importing, please wait ... </h2>";
+  spinnerShouldShow = true;
+  setTimeout(() => {
+    slotsContainer.innerHTML = "";
+    injectHtmlForSlotsToDOM();
+    // ADJUST VISIBILITY OF SLOTS
+    for (let i = 0; i < defaultSet().slots.length; i++) {
+      let slot = defaultSet().slotWithIndex(i);
+      document.getElementById("active-" + i).checked = slot.active;
+      setSlotVisibility(i);
+      // SET SELECT-OPTION_VALUES
+      document.getElementById(`textType-${i}`).value = slot.textTypeId;
+      document.getElementById(`animation-${i}`).value = slot.animationId;
+      setTextOptionsForSlot(i);
+      showRemainingChars(i);
+      spinnerShouldShow = false;
+    }
+  }, "3000");
+}
+
+// PULLS VALUES OUT OF SLOT FORMFIELDS TO STORE IN CONFIGURATION MODEL (CALLED AFTER ALL CHANGES TO SETUP)
 async function configurationSynchronize() {
   let slotsToSync = defaultSet().getSlots();
   for (let i = 0; i < slotsToSync.length; i++) {
     let slot = slotsToSync[i];
-    slot.textType = document.getElementById("textType-" + i).value;
+    slot.textTypeId = Number(document.getElementById(`textType-${i}`).value);
+    slot.animationId = Number(document.getElementById(`animation-${i}`).value);
+
     slot.text = document.getElementById("text-" + i).value;
-    slot.animationId = document.getElementById("animation-" + i).value;
-    slot.duration = document.getElementById("duration-" + i).value;
-    slot.xOffset = document.getElementById("offset-interval-" + i).value;
-    slot.charScale = document.getElementById("char-scaler-" + i).value;
-    slot.charSpace = document.getElementById("char-space-" + i).value;
+    slot.duration = Number(document.getElementById("duration-" + i).value);
+    slot.xOffset = Number(document.getElementById("offset-interval-" + i).value);
+    slot.charScale = Number(document.getElementById("char-scaler-" + i).value);
+    slot.charSpace = Number(document.getElementById("char-space-" + i).value);
     slot.active = document.getElementById("active-" + i).checked;
     // slot.debug();
   }
-  // prepare button to download stuff
+  // UPDATE THE CONFIG DATA TO BE READY FOR DOWNLOAD
   prepareDownload();
 }
+
+/********************************
+ * CREATE AND INJECT SOME HTML FOR PAGE
+ *********************************/
 
 // BUILD DEFAULT CONFIG SET
 defaultSet();
 
 // BUILD DOM
-function appendHtmlForSlotsToDOM() {
+function injectHtmlForSlotsToDOM() {
   document.getElementById("setselector").innerHTML =
     defaultSet().displayName + " (" + defaultSet().numberOfSlots() + " slots)";
   for (let i = 0; i < MAX_NUM_SLOTS; i++) {
@@ -228,20 +509,54 @@ function appendHtmlForSlotsToDOM() {
   }
 }
 
+// DERIVE THE VERION OF WEBCONFIGURATOR FROM DeviceSetMeta-CLASS PROPERTY
+document.getElementById("version").innerHTML =
+  "Version " + DeviceSetMeta.VERSION;
+
 /********************************
  * GENERAL HELPER FUNCTIONS
  *********************************/
 
-// SHOW AN ALERT MESSAGE
-function alertShowWithInnerHtml(htmlToPlace) {
-  document.getElementById("alertcontent").innerHTML = htmlToPlace;
-  document.getElementById("alert").style.display = "block";
+// SCROLL SMOTHLY TO An ELEMENT
+function scrollToElementWithId(element_id) {
+  try {
+    let targetElement = document.getElementById(element_id);
+    scrollOptions = { "behavior": "smooth", "block": "center", "inline": "nearest" };
+    targetElement.scrollIntoView(scrollOptions);
+  }
+  catch (error) {
+    // do nothing 
+  }
 }
 
-// DISMISS ALERT MESSAGE
-function alertClose() {
-  document.getElementById("alert").style.display = "none";
-  document.getElementById("alertcontent").innerHTML = "";
+// SHOW A MESSAGE IN A WINDOW WITH A CERTAIN STYLE AND CONTENT
+function windowShowWithTypeAndTitleAndInnerHtml(
+  title,
+  type,
+  footer,
+  html_content
+) {
+  document.getElementById("windowtitle").innerHTML = title;
+  document.getElementById("windowfooter").innerHTML = footer;
+  document.getElementById("windowcontent").innerHTML = html_content;
+  if (type == "error") {
+    document.getElementById("windowcontent").style.backgroundColor = "#990225";
+    document.getElementById("window").style.backgroundColor = "#cb0141";
+  }
+  if (type == "info") {
+    document.getElementById("windowcontent").style.backgroundColor = "#017dcb";
+    document.getElementById("window").style.backgroundColor = "#1f97e1";
+  }
+  if (type == "share") {
+    document.getElementById("windowcontent").style.backgroundColor = "#8a007c";
+    document.getElementById("window").style.backgroundColor = "#b1009f";
+  }
+  document.getElementById("window").style.display = "block";
+}
+
+// DISMISS ANY CUSTOM WINDOW
+function windowHide(element_id) {
+  document.getElementById(element_id).style.display = "none";
 }
 
 // STORE A VALUE INTO PERSISTENT LOCAL STORE (COOKIES DON'T WORK IN LOCAL MODE)
@@ -279,7 +594,7 @@ function withTimeout(promise, timeout) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout")), timeout),
+      setTimeout(() => reject(new Error("Timeout")), timeout)
     ),
   ]);
 }
@@ -290,8 +605,12 @@ function toggleClassForElementWithIdTo(element_id, className) {
   if (e) {
     // console.log( "ELEMENT: "+element_id+" CLASS: "+className );
     let classesToRemove = e.classList;
-    e.classList.remove(classesToRemove);
-    e.classList.add(className);
+    if (classesToRemove != null && classesToRemove.length > 0) {
+      e.classList.remove(classesToRemove);
+    }
+    if (className != null && className.length > 0) {
+      e.classList.add(className);
+    }
   } else {
     console.log("ERROR: ELEMENT FOR ID " + element_id + " NOT FOUND.");
   }
@@ -323,7 +642,7 @@ function askWriteAllSlots() {
   if (port == null) return;
   if (
     confirm(
-      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!",
+      "Really write all slots now?\n\nWARNING: Inactive slots will be cleared!"
     )
   ) {
     writeAllSlots();
@@ -364,8 +683,9 @@ function writeSlot(slt) {
     writingSlot++;
     // launch delayed next write
     setTimeout(() => {
+      toggleClassForElementWithIdTo(`slot-name-${writingSlot}`, "blink");
       writeSlot(writingSlot);
-    }, "1000");
+    }, "2000");
   } else {
     // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
     writingData = false;
@@ -376,9 +696,17 @@ function writeSlot(slt) {
 
 // SHOW AND HIDE SMALL GREEN CHECKMARK
 function writeConfirmation(slt) {
+  if (writingData) {
+    scrollToElementWithId(`slot-name-${slt + 1}`);
+  }
+
   document.getElementById("writeConfirm-" + slt).classList.remove("hidden");
   setTimeout(() => {
     document.getElementById("writeConfirm-" + slt).classList.add("hidden");
+    toggleClassForElementWithIdTo(`slot-name-${slt}`, "");
+    if (writingData == false) {
+      scrollToElementWithId("spinner");
+    }
   }, "1000");
 }
 
@@ -392,6 +720,7 @@ function deleteSlot(index) {
   document.getElementById(`x-offset-${index}`).value = "";
   document.getElementById(`char-scaler-${index}`).value = "";
   document.getElementById(`active-${index}`).checked = false;
+  hasTouchedOrChangedTheConfigurationData();
 }
 
 // ADJUST HTML VISIBILITY FOR SLOT
@@ -405,6 +734,7 @@ function setSlotVisibility(slt) {
     toggleClassForElementWithIdTo("send-button-" + slt, "writeslotred");
     document.getElementById("send-button-" + slt).innerHTML = "Clear slot...";
   }
+  hasTouchedOrChangedTheConfigurationData();
 }
 
 // ADJUST HTML FORM VALUES FOR SLOT
@@ -492,7 +822,8 @@ function receiveUART(msg) {
         document.getElementById("textType-" + slot).value = 0;
         document.getElementById("animation-" + slot).value = dat[0];
         document.getElementById("duration-" + slot).value = dat[1];
-      } else {
+      }
+      else {
         document.getElementById("text-" + slot).value = slotText;
         document.getElementById("animation-" + slot).value = dat[1];
         document.getElementById("duration-" + slot).value = dat[2];
@@ -504,6 +835,7 @@ function receiveUART(msg) {
       document.getElementById("active-" + slot).checked = true;
       setSlotVisibility(slot);
       setTextOptionsForSlot(slot);
+      showRemainingChars(slot);
     } else if (msg.includes("not active")) {
       document.getElementById("active-" + slot).checked = false;
       setSlotVisibility(slot);
@@ -540,16 +872,19 @@ async function sendUART(msg) {
       if (error.className == "NetworkError") {
         console.error("UART SENDING: (NetworkError)");
       }
-      alertShowWithInnerHtml(
+      windowShowWithTypeAndTitleAndInnerHtml(
+        "ERROR",
+        "error",
+        "An error occurred while trying to send data.",
         "SENDING TO DEVICE FAILED.<br><br><code>" +
-          msg +
-          "</code><br><br>NOT SENT, LOST CONNECTION.",
+        msg +
+        "</code><br><br>NOT SENT, LOST CONNECTION."
       );
     }
   } else {
     // IF THE PORT IS GONE, GO TO DISCONNECTED STATE
     setStateToDisconnected();
-    // alertShowWithInnerHtml("Port is not open. Please connect to the port first.");
+    // windowShowWithTypeAndTitleAndInnerHtml("ERROR", "error", "Device lost connection.", "Port is not open. Please connect to the port first.");
   }
 }
 
@@ -691,12 +1026,13 @@ async function releaseAllLocks() {
 
 // CHECKS IF WE HAVE A VALID PORT AND IF THE PORT IS PROPERLY ACESSIBLE (GETS CALLED A LOT)
 async function checkOpenPort() {
+  // CHECKS IF WE HAVE PENDING UPDATES TO THE CONFIGURATION
   accessiblePort = await getAvailablePort();
   if (accessiblePort) {
     // TRY TO RECONNECT WHEN PORT IS THERE BUT NOT CONNECTED
     port = accessiblePort;
     console.log(
-      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED"),
+      "PORT IS " + (accessiblePort.connected ? "CONNECTED" : "DISCONNECTED")
     );
     console.log("PORT IS " + (accessiblePort.readable ? "OPEN" : "CLOSED"));
     if (accessiblePort.connected) {
@@ -713,7 +1049,7 @@ async function checkOpenPort() {
             readerAborter = new AbortController();
             readableStreamClosed = accessiblePort.readable.pipeTo(
               textDecoder.writable,
-              readerAborter,
+              readerAborter
             );
             reader = textDecoder.readable.getReader();
             // LAUNCH READ LOOP...
@@ -721,7 +1057,16 @@ async function checkOpenPort() {
             // FETCH INFOS FROM TAG
             connectedUART();
           } catch (error) {
-            console.error(error);
+            console.log(error);
+            let errorString = "" + error;
+            if (errorString.indexOf("NetworkError") > -1) {
+              windowShowWithTypeAndTitleAndInnerHtml(
+                "ERROR",
+                "error",
+                "Port already in use.",
+                "The serial port / USB port is currently already used by another browser window / tab / instance and blocked! Unable to open a connection right now."
+              );
+            }
           }
         } else {
           // READABLE, ALL FINE DO NOTHING
@@ -741,7 +1086,7 @@ async function checkOpenPort() {
         readerAborter = new AbortController();
         readableStreamClosed = accessiblePort.readable.pipeTo(
           textDecoder.writable,
-          readerAborter,
+          readerAborter
         );
         reader = textDecoder.readable.getReader();
         // LAUNCH READ LOOP...
@@ -806,7 +1151,7 @@ function askForDevicename() {
     let placeholder = deviceName ? deviceName : "HSHB Name Tag";
     let usbDeviceName = prompt(
       "Please enter a name for your device",
-      placeholder,
+      placeholder
     );
     if (usbDeviceName != null) {
       if (usbDeviceName == "") {
@@ -924,7 +1269,7 @@ function isBrowserCompatible() {
  *********************************/
 
 // ASSEMBLE HTML CODE NEEDED TO FILL SITE FOR LAUNCH
-appendHtmlForSlotsToDOM();
+injectHtmlForSlotsToDOM();
 
 // ATTACH CLICK LISTENER TO CONNECT-BUTTON
 document.getElementById("connect").addEventListener("click", async () => {
@@ -944,8 +1289,11 @@ document.getElementById("connect").addEventListener("click", async () => {
       reconnectToDevice();
     } else {
       console.error(error);
-      alertShowWithInnerHtml(
-        "Please select a serial port for your device from the list the browser presented to you.",
+      windowShowWithTypeAndTitleAndInnerHtml(
+        "INFO",
+        "info",
+        "No serial- / USB-port selected.",
+        "Please select a serial port for your device from the list the browser presented to you."
       );
     }
   }
@@ -977,61 +1325,3 @@ if (!isBrowserCompatible()) {
 /********************************
  * LEGACY STUFF
  *********************************/
-
-/*
-
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'slot';
-        slotDiv.innerHTML = `
-            <h3 style="display:inline"><input type="checkbox" id="active-${i}" onClick="setSlotVisibility(${i})">&nbsp;Slot ${i}</h3><button id="send-button-${i}" onclick="writeSlot(${i})" class="writeslotred">Clear slot...</button> <span id="writeConfirm-${i}" class="writeConfirm hidden">✅</span>
-            <div id="slot-content-${i}" style="display:none">
-                <fieldset>
-                    <legend>Movement, spacing & character width</legend>
-                    <label for="textType-${i}">Type</label>
-                    <select id="textType-${i}" value="1" onChange="setTextOptionsForSlot(${i})">
-                        <option value="0">None</option>
-                        <option value="1" selected>Static</option>
-                        <option value="2">Scrolling</option>
-                    </select>
-
-                    &nbsp;<label id="offset-interval-label-${i}" for="offset-interval-${i}">X-Offset</label>
-                    <input type="number" class="numInput" id="offset-interval-${i}" min="0" max="255" value="0">
-
-                    &nbsp;<label for="char-space-${i}">Char Space</label>
-                    <input type="number" class="numInput" id="char-space-${i}" min="0" max="60" value="2">
-
-                    &nbsp;<label for="char-scaler-${i}">Char Scaler</label>
-                    <input type="number" class="numInput" id="char-scaler-${i}" min="1" max="5" value="1">
-
-                </fieldset>
-                <div id="text-options-${i}">
-                    <fieldset>
-                    <legend>Text for display (can be up to 75 chars...)</legend>
-                        <input type="text" id="text-${i}" size="75" maxlength="75" value="" placeholder="Text to display goes here...">
-                    </fieldset>
-                </div>
-                <fieldset>
-                    <legend>Animation options</legend>
-                    <label id="duration-label-${i}" for="duration-${i}">Duration</label>
-                    <input type="number" class="numInput" id="duration-${i}" min="1" max="60" value="1">
-
-                    &nbsp;<label for="animation-${i}">Animation</label>
-                    <select id="animation-${i}">
-                        <option value="0">Static Off</option>
-                        <option value="1" selected>Static On</option>
-                        <option value="2">Matrix</option>
-                        <option value="3">Sweep</option>
-                        <option value="4">Wave</option>
-                        <option value="5">Lines</option>
-                        <option value="6">Lines Fill</option>
-                        <option value="7">Rotate</option>
-                        <option value="8">Rotate Fill</option>
-                        <option value="9">Circles</option>
-                    </select>
-
-                </fieldset>
-            </div>
-        `;
-        slotsContainer.appendChild(slotDiv);
-
-        */

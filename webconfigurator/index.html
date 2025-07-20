@@ -1,73 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Name Tag Configurator</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-  </head>
-  <body>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+</head>
+
+<body>
     <div class="head">
-      <h1>
-        <span id="spinner" class="spinnerhide"></span>Name Tag
-        Configurator&nbsp;<span id="status" class="statusred"></span
-        ><button id="connect" class="preparing">
-          Connect device & select USB port ...</button
-        ><button
-          id="disconnectbutton"
-          class="disconnectbuttonhidden"
-          onclick="disconnectFromDevice();"
-        >
-          Disconnect
-        </button>
-      </h1>
-      <div>
-        <span
-          id="devicename"
-          class="devicenameunknown"
-          onclick="askForDevicename();"
-          >Unknown Device</span
-        ><span class="editsymbol">&nbsp;(Click to edit)</span>
-      </div>
+        <h1><span id="spinner" class="spinnerhide"></span>Name Tag Configurator&nbsp;<span id="status"
+                class="statusred"></span><button id="connect" class="preparing">Connect device & select USB port
+                ...</button><button id="disconnectbutton" class="disconnectbuttonhidden"
+                onclick="disconnectFromDevice();">Disconnect</button></h1>
+        <div><span id="devicename" class="devicenameunknown" onclick="askForDevicename();">Unknown Device</span><span
+                class="editsymbol">&nbsp;(Click to edit)</span></div>
     </div>
     <div class="attention"></div>
-    <div class="content" style="margin-bottom: 20px">
-      <strong>Configuration:</strong> <span id="setselector"></span>&nbsp;<a
-        id="download"
-        download="configuration.json"
-        class="downloadhidden"
-        >Download</a
-      >
+    <div class="content" style="margin-bottom:20px;">
+        <strong>Configuration:</strong> <span id="setselector" class="setselector" onclick="editConfigName()"
+            title="Current name for this configuration. You can edit and change the name."></span><span
+            class="editset">&nbsp;(Click to edit)</span>&nbsp;<a id='upload' class="upload" onclick="prepareUpload()"
+            title="Click to import a configuration from a stored file.">Import</a>&nbsp;&nbsp;<a id='download'
+            download="configuration.json" class="downloadhidden"
+            title="Click to download current configuration as file.">Download</a>&nbsp;&nbsp;<a id='share'
+            class="sharehidden" onclick="showEmbedShare()" value=""
+            title="Click to get embed code to share this configuration.">Share EMBED</a>
     </div>
-    <div class="content" style="margin-bottom: 20px">
-      <button onclick="askWriteAllSlots()" class="writeallslots">
-        Send all slots...
-      </button>
-      <span id="help" class="help"
-        >Please connect your badge via USB cable to the computer. Then click the
-        "Connect via USB"-button to start interaction with the badge. It should
-        automatically load the configured Slots.</span
-      >
+    <div class="content" style="margin-bottom:20px;">
+        <button onclick="askWriteAllSlots()" class="writeallslots"
+            title="Click to send all configured slots to the device in one go.">Send all slots...</button>
+        <span id="help" class="help">Please connect your badge via USB cable to the computer. Then click the "Connect
+            via USB"-button to start interaction with the badge. It should automatically load the configured
+            Slots.</span>
     </div>
     <div class="content">
-      <div id="slots">
-        <noscript class="noscript"
-          >Please activate Javascript to use this configurator.</noscript
-        >
-      </div>
+        <div id="slots"><noscript class="noscript">Please activate Javascript to use this configurator.</noscript></div>
     </div>
-    <br clear="all" />
+    <br clear="all">
     <div class="attention"></div>
-    <div class="version">
-      Name Tag Configurator — Version 1.8 —
-      <a href="https://hackerspacebremen.github.io/hshb-nametag/">see online</a>
-    </div>
-    <div id="alert" class="alert">
-      ERROR
-      <div id="alertcontent" class="alertcontent"></div>
-      <span class="alertok" onclick="alertClose()">&nbsp;OK&nbsp;</span>
+    <div class="version">Name Tag Configurator — <span id="version"></span> — Use at <a
+            href="https://hackerspacebremen.github.io/hshb-nametag/">HSHB</a> online — <span><a
+                href="data:application/octet-stream;base64,eyJNRVRBIjp7IkRBVEVDSEFOR0VEIjoiMjAyNS0wNy0xOFQxNzoyMDo1NS40MTZaIn0sImRpc3BsYXlOYW1lIjoiRXhhbXBsZSBDb25maWd1cmF0aW9uIiwidW5pcXVlSWRlbnRpZmllciI6IjRkMTc0YjUyLTMxOTQtNGZmYi05NzhjLTA4YzI5NzkwODM4NCIsInNsb3RzIjpbeyJzbG90SWQiOjAsInRleHRUeXBlSWQiOjEsInhPZmZzZXQiOjAsImNoYXJTcGFjZSI6MCwiY2hhclNjYWxlIjoxLCJ0ZXh0IjoiU1BBQ0UgMCIsImR1cmF0aW9uIjo1LCJhbmltYXRpb25JZCI6MCwiYWN0aXZlIjp0cnVlfSx7InNsb3RJZCI6MSwidGV4dFR5cGVJZCI6MSwieE9mZnNldCI6MCwiY2hhclNwYWNlIjo0LCJjaGFyU2NhbGUiOjEsInRleHQiOiJTUEFDRSA0IiwiZHVyYXRpb24iOjUsImFuaW1hdGlvbklkIjoxLCJhY3RpdmUiOnRydWV9LHsic2xvdElkIjoyLCJ0ZXh0VHlwZUlkIjoxLCJ4T2Zmc2V0IjowLCJjaGFyU3BhY2UiOjIsImNoYXJTY2FsZSI6MiwidGV4dCI6IkJJRyIsImR1cmF0aW9uIjo1LCJhbmltYXRpb25JZCI6MCwiYWN0aXZlIjp0cnVlfSx7InNsb3RJZCI6MywidGV4dFR5cGVJZCI6MSwieE9mZnNldCI6NiwiY2hhclNwYWNlIjoyLCJjaGFyU2NhbGUiOjEsInRleHQiOiJPRkZTRVQgNiIsImR1cmF0aW9uIjo1LCJhbmltYXRpb25JZCI6MSwiYWN0aXZlIjp0cnVlfSx7InNsb3RJZCI6NCwidGV4dFR5cGVJZCI6MiwieE9mZnNldCI6MCwiY2hhclNwYWNlIjoyLCJjaGFyU2NhbGUiOjEsInRleHQiOiJGQVNUIFNDUk9MTElORyBGQVNUIFNDUk9MTElORyBGQVNUIFNDUk9MTElORyBGQVNUIFNDUk9MTElORyBGQVNUIFNDUk9MTElORyIsImR1cmF0aW9uIjoxLCJhbmltYXRpb25JZCI6MCwiYWN0aXZlIjp0cnVlfSx7InNsb3RJZCI6NSwidGV4dFR5cGVJZCI6MiwieE9mZnNldCI6NiwiY2hhclNwYWNlIjoyLCJjaGFyU2NhbGUiOjEsInRleHQiOiJTTE9XIFNDUk9MTElORyBTTE9XIFNDUk9MTElORyBTTE9XIFNDUk9MTElORyBTTE9XIFNDUk9MTElORyAiLCJkdXJhdGlvbiI6MSwiYW5pbWF0aW9uSWQiOjEsImFjdGl2ZSI6dHJ1ZX0seyJzbG90SWQiOjYsInRleHRUeXBlSWQiOjIsInhPZmZzZXQiOjAsImNoYXJTcGFjZSI6MiwiY2hhclNjYWxlIjoxLCJ0ZXh0IjoiTUFUUklYIEFOSU1BVElPTiBNQVRSSVggQU5JTUFUSU9OIE1BVFJJWCBBTklNQVRJT04gTUFUUklYIEFOSU1BVElPTiAiLCJkdXJhdGlvbiI6MSwiYW5pbWF0aW9uSWQiOjIsImFjdGl2ZSI6dHJ1ZX0seyJzbG90SWQiOjcsInRleHRUeXBlSWQiOjIsInhPZmZzZXQiOjAsImNoYXJTcGFjZSI6MiwiY2hhclNjYWxlIjoxLCJ0ZXh0IjoiTElORVMgQU5JTUFUSU9OIExJTkVTIEFOSU1BVElPTiBMSU5FUyBBTklNQVRJT04gTElORVMgQU5JTUFUSU9OIiwiZHVyYXRpb24iOjEsImFuaW1hdGlvbklkIjo1LCJhY3RpdmUiOnRydWV9LHsic2xvdElkIjo4LCJ0ZXh0VHlwZUlkIjoyLCJ4T2Zmc2V0IjowLCJjaGFyU3BhY2UiOjIsImNoYXJTY2FsZSI6MSwidGV4dCI6IlJPVEFURSBGSUxMIEFOSU1BVElPTiBST1RBVEUgRklMTCBBTklNQVRJT04gUk9UQVRFIEZJTEwgQU5JTUFUSU9OICIsImR1cmF0aW9uIjoxLCJhbmltYXRpb25JZCI6OCwiYWN0aXZlIjp0cnVlfSx7InNsb3RJZCI6OSwidGV4dFR5cGVJZCI6MiwieE9mZnNldCI6MCwiY2hhclNwYWNlIjoyLCJjaGFyU2NhbGUiOjEsInRleHQiOiJXQVZFIEFOSU1BVElPTiBXQVZFIEFOSU1BVElPTiBXQVZFIEFOSU1BVElPTiBXQVZFIEFOSU1BVElPTiBXQVZFIEFOSU1BVElPTiIsImR1cmF0aW9uIjoxLCJhbmltYXRpb25JZCI6NCwiYWN0aXZlIjp0cnVlfV19"
+                download="shared-configuration-18-7-2025-19-20.json"
+                title="Click to download an example configuration showing key parameters configured.">Example
+                Configuration</a></span></div>
+    <div id="window" class="window"><span id="windowtitle">TITLE</span>
+        <div id="windowcontent" class="windowcontent"></div>
+        <div id="windowfooter" class="windowfooter"></div><span class="windowok"
+            onclick="windowHide('window')">&nbsp;OK&nbsp;</span>
     </div>
     <script src="main.js"></script>
-  </body>
+</body>
+
 </html>

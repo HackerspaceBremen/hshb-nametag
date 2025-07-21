@@ -3,17 +3,17 @@
 import os
 import subprocess
 
-board_id = os.getenv("BOARD_ID", "1")
+board_id = os.getenv("BOARD_ID", "24")
 
-try:
+try:  # FETCH GIT COMMIT HASH
     build_version = (
         subprocess.run(
-            ["git", "describe", "--tags", "HEAD", "--long"], stdout=subprocess.PIPE
+            ["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE
         )
         .stdout.decode()
         .strip()
     )
 except:
-    build_version = "unknown"
+    build_version = ""
 
 print(f'-Os -DBOARD_ID={board_id} -DBUILD_VERSION="{build_version}"')

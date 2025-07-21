@@ -9,7 +9,7 @@
 #include "uart.h"
 
 struct Slot current_slot = {
-    .slot_no = SLOT_MAX,
+    .slot_no = SLOT_NUM_MAX,
     .slot_loaded_millis = 0,
     .scroll_counter = 0,
     .last_animation = INVALID_ANIMATION,
@@ -20,7 +20,7 @@ static uint8_t *get_base_address(uint8_t slot_no) {
 }
 
 void slot_load(struct Slot *slot) {
-  if (slot->slot_no >= SLOT_MAX) return;
+  if (slot->slot_no >= SLOT_NUM_MAX) return;
   const uint8_t *base_address = get_base_address(slot->slot_no);
   slot->enabled = eeprom_read_byte(base_address);
   slot->animation = eeprom_read_byte(base_address + 1);
@@ -60,7 +60,7 @@ static inline void sanitize_chars(char *chars) {
 }
 
 void slot_save(struct Slot *slot) {
-  if (slot->slot_no >= SLOT_MAX) return;
+  if (slot->slot_no >= SLOT_NUM_MAX) return;
   uint8_t *base_address = get_base_address(slot->slot_no);
   eeprom_write_byte(base_address, slot->enabled);
   eeprom_write_byte(base_address + 1, slot->animation);
@@ -119,7 +119,7 @@ void slot_advance() {
   uint8_t attempts = 0;
   while (1) {
     current_slot.slot_no++;
-    if (current_slot.slot_no >= SLOT_MAX) {
+    if (current_slot.slot_no >= SLOT_NUM_MAX) {
       current_slot.slot_no = 0;
     }
     slot_load((struct Slot *)&current_slot);
@@ -128,7 +128,7 @@ void slot_advance() {
     }
 
     attempts++;
-    if (attempts >= SLOT_MAX) {
+    if (attempts >= SLOT_NUM_MAX) {
       // No active slots found.
       break;
     }
@@ -183,6 +183,12 @@ void slot_handle() {
         break;
       case CIRCLES:
         animation_circles();
+        break;
+      case STRIPES:
+        animation_stripes(2);
+        break;
+      case SPARKLE:
+        animation_sparkle();
         break;
       default:  // Includes LOGO_OFF
         for (uint16_t k = LOGO_START; k < LOGO_END; k++)

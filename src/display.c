@@ -740,9 +740,9 @@ void display_write_text(uint16_t x, char t[], uint8_t s, uint8_t c,
     for (uint16_t j = x + c * s * 7; x < j && x < 420; x++) {
       vRAM[x] = offBright;
     }
-    if (x >= TEXT_END) return;
+    if (x > TEXT_END) return;
   }
-  for (; x < TEXT_END; x++) {
+  for (; x <= TEXT_END; x++) {
     vRAM[x] = offBright;
   }
 }
@@ -829,7 +829,7 @@ void clear_vram() {
 }
 
 void clear_vram_text() {
-  for (uint16_t k = TEXT_START; k < TEXT_END; k++) vRAM[k] = 0;
+  for (uint16_t k = TEXT_START; k <= TEXT_END; k++) vRAM[k] = 0;
 }
 
 void clear_vram_logo() {

@@ -19,7 +19,9 @@ const uint8_t bArray[] PROGMEM = {
     63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
 uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
 
+// GETS CALLED BEFORE EACH NEW ANIMATION
 void animations_reset() {
+  // PROVIDES GLOBAL ITERATION-VARS TO EACH ANIMATION METHOD FOR FREE USE
   i = 0;
   j = 0;
   step = 0;
@@ -40,7 +42,7 @@ void animation_line(uint8_t fill) {
       if (!fill) {
         clear_vram_logo();
       }
-      logo_draw_line(i, 0, i, 18, on);
+      logo_draw_line(i, LOGO_ROW_FIRST, i, LOGO_ROW_LAST, on);
       i++;
       if (i >= 15) {
         i = 0;
@@ -48,13 +50,13 @@ void animation_line(uint8_t fill) {
       }
     } else if (step == 1) {
       if (fill) {
-        logo_draw_line(0, i, 14, i, off);
+        logo_draw_line(LOGO_COL_FIRST, i, LOGO_COL_LAST, i, off);
       } else {
         clear_vram_logo();
-        logo_draw_line(0, i, 14, i, on);
+        logo_draw_line(LOGO_COL_FIRST, i, LOGO_COL_LAST, i, on);
       }
       i++;
-      if (i >= 19) {
+      if (i > LOGO_ROW_LAST) {
         i = 0;
         step++;
       }
@@ -62,7 +64,7 @@ void animation_line(uint8_t fill) {
       if (!fill) {
         clear_vram_logo();
       }
-      logo_draw_line(14 - i, 0, 14 - i, 18, on);
+      logo_draw_line(LOGO_COL_LAST - i, LOGO_ROW_FIRST, LOGO_COL_LAST - i, LOGO_ROW_LAST, on);
       i++;
       if (i >= 15) {
         i = 0;
@@ -70,13 +72,13 @@ void animation_line(uint8_t fill) {
       }
     } else if (step == 3) {
       if (fill) {
-        logo_draw_line(0, 18 - i, 14, 18 - i, off);
+        logo_draw_line(LOGO_COL_FIRST, LOGO_ROW_LAST - i, LOGO_COL_LAST, LOGO_ROW_LAST - i, off);
       } else {
         clear_vram_logo();
-        logo_draw_line(0, 18 - i, 14, 18 - i, on);
+        logo_draw_line(LOGO_COL_FIRST, LOGO_ROW_LAST - i, LOGO_COL_LAST, LOGO_ROW_LAST - i, on);
       }
       i++;
-      if (i >= 19) {
+      if (i > LOGO_ROW_LAST) {
         i = 0;
         step = 0;
         return;
@@ -91,13 +93,13 @@ void animation_rotate(uint8_t fill) {
   if (quarter % 2 == 0) {
     if (fill) {
       if (quarter == 0) {
-        logo_draw_line(i, 0, 14 - i, 18, on);
+        logo_draw_line(i, LOGO_ROW_FIRST, LOGO_COL_LAST - i, LOGO_ROW_LAST, on);
       } else {
-        logo_draw_line(i, 0, 14 - i, 18, off);
+        logo_draw_line(i, LOGO_ROW_FIRST, LOGO_COL_LAST - i, LOGO_ROW_LAST, off);
       }
     } else {
       clear_vram_logo();
-      logo_draw_line(i, 0, 14 - i, 18, on);
+      logo_draw_line(i, LOGO_ROW_FIRST, LOGO_COL_LAST - i, LOGO_ROW_LAST, on);
     }
     i++;
     if (i >= 15) {
@@ -107,16 +109,16 @@ void animation_rotate(uint8_t fill) {
   } else {
     if (fill) {
       if (quarter == 1) {
-        logo_draw_line(0, 18 - i, 14, i, on);
+        logo_draw_line(0, LOGO_ROW_LAST - i, LOGO_COL_LAST, i, on);
       } else {
-        logo_draw_line(0, 18 - i, 14, i, off);
+        logo_draw_line(0, LOGO_ROW_LAST - i, LOGO_COL_LAST, i, off);
       }
     } else {
       clear_vram_logo();
-      logo_draw_line(0, 18 - i, 14, i, on);
+      logo_draw_line(0, LOGO_ROW_LAST - i, LOGO_COL_LAST, i, on);
     }
     i++;
-    if (i >= 19) {
+    if (i > LOGO_ROW_LAST) {
       i = 1;
       quarter++;
     }
@@ -210,12 +212,12 @@ void animation_sweep() {
   uint8_t off = display_state.animation_brightness_off;
   j--;
   if (j == -127) {
-    j = 18;
+    j = LOGO_ROW_LAST;
     i = !i;
   }
 
-  for (int x = 0; x < 15; x++) {
-    for (int y = 0; y < 19; y++) {
+  for (int x = LOGO_COL_FIRST; x <= LOGO_COL_LAST; x++) {
+    for (int y = LOGO_ROW_FIRST; y <= LOGO_ROW_LAST; y++) {
       if (j > y) {
         if (i == 1) {
           logo_set_xy(x, y, off);
@@ -240,8 +242,8 @@ void animation_wave() {
     counter0 = 0;
 
     i = j;
-    for (uint8_t k = 0; k <= 18; k++) {
-      logo_draw_line(0, k, 14, k, pgm_read_byte(&bArray[i]) + 10);
+    for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
+      logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k, pgm_read_byte(&bArray[i]) + 10);
       i++;
       if (i >= 35) i = 0;
     }
@@ -249,3 +251,93 @@ void animation_wave() {
     if (j >= 35) j = 0;
   }
 }
+
+
+const uint8_t ra[] PROGMEM = {0, 3, 8, 11 };
+const uint8_t ca[] PROGMEM = {8,  7, 5, 3 };
+
+const uint8_t sparkX[] PROGMEM = {8,  7, 5, 3 };
+const uint8_t sparkY[] PROGMEM = {12, 3, 8, 11 };
+const uint8_t bright[] PROGMEM = {64, 32, 16, 8, 4, 2 };
+
+// CREATES RANDOMLY APPEARING STARS ON THE LOGO AREA
+void animation_sparkle() {
+  if (counter0 < 1) {
+    counter0++;
+  }
+  else {
+    counter0 = 0;
+      logo_set_xy( pgm_read_byte(&sparkX[step]), pgm_read_byte(&sparkY[step]), pgm_read_byte(&bright[i]) );
+      i++;  // BRIGHTNESS
+      if( i > 5 ) {
+        step++;
+        clear_vram_logo(); // CLEAN CANVAS
+        i = 0;
+        if( step > 3 ) {
+          step = 0;
+        }
+      }
+  }
+}
+
+// CREATES STRIPES BEEING MOVED TOWARDS EACH OTHER
+void animation_stripes(uint8_t length) {
+  uint8_t on = display_state.animation_brightness_on;
+  uint8_t off = display_state.animation_brightness_off;
+  int8_t stripe_length = length;
+  int8_t stripe_start = -stripe_length;
+  int8_t x_start = 0;
+  int8_t x_end = 0;
+  uint8_t overflow = 30;
+
+  if( counter0 < 1 ) {
+    counter0++;
+  }
+  else {
+    counter0 = 0;
+    for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) { // ITERATE OVER ROWS
+      // CLEAR LINE
+      logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k, off);
+      if( k % 2 == 0 ) { // ODD LINES
+        x_start = i+stripe_start;
+        x_end = i+stripe_start+stripe_length;
+      }
+      else { // EVEN LINES
+        x_start = LOGO_COL_LAST-i;
+        x_end = LOGO_COL_LAST-i+stripe_length;
+      }
+      if( x_start < LOGO_COL_FIRST ) {
+        x_start = LOGO_COL_FIRST;
+      }
+      if( x_start > LOGO_COL_LAST ) {
+        x_start = LOGO_COL_LAST;
+      }
+      if( x_end > LOGO_COL_LAST ) {
+        x_end = LOGO_COL_LAST;
+      }
+      if( x_end < LOGO_COL_FIRST ) {
+        x_end = LOGO_COL_FIRST;
+      }
+      // DRAW LINE
+      if (i > LOGO_COL_FIRST-stripe_length+1 && i < LOGO_COL_LAST+stripe_length-1  ) { // ONLY DRAW LINES VALID
+        logo_draw_line(x_start, k, x_end, k, on);
+      }
+    }
+    if( j == 0 ) {
+      i++; // X-ITERATOR FROM LEFT TO RIGHT
+      if (i >= LOGO_COL_LAST+stripe_length+overflow) {
+        clear_vram_logo(); // CLEAN CANVAS
+        j = 1;
+      }
+    }
+    else {
+      i--; // X-ITERATOR FROM RIGHT TO LEFT
+      if (i <= LOGO_COL_FIRST-stripe_length-overflow) {
+        clear_vram_logo(); // CLEAN CANVAS
+        i = 0;
+        j = 0;
+      }
+    }
+  }
+}
+

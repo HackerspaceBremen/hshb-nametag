@@ -262,7 +262,7 @@ DeviceSlot.fromJSON = function (json) {
 // GET THE CURRENT ACTIVE DEVICE CONFIG
 function defaultSet() {
   if (defaultDeviceConfigurationSet == null) {
-    defaultDeviceConfigurationSet = new DeviceSet("Default", null);
+    defaultDeviceConfigurationSet = new DeviceSet("Default Configuration", null);
     for (let i = 0; i < MAX_NUM_SLOTS; i++) {
       let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1, false);
       defaultDeviceConfigurationSet.addSlot(currentSlot);
@@ -785,9 +785,11 @@ async function readLoop() {
       console.log("UART READING: GOT DATA ...");
     }
     console.log("UART READING: EXIT/CANCELLING READLOOP");
-  } catch (error) {
+  }
+  catch (error) {
     console.error("READ LOOP: FAILED WITH ERROR\n" + error);
     reader = null;
+    windowShowWithTypeAndTitleAndInnerHtml( "ERROR", "error", "Error while trying to read from device.", error );
     if (error.className == "NetworkError") {
       console.log("UART ERROR: Could not READ from device. (NetworkError)");
     }
@@ -905,6 +907,7 @@ function connectedUART() {
     gettingData = true;
     gettingSlot = 0;
     try {
+      defaultSet.displayName = "Current Device Config";
       sendUART("R 0\n");
     } catch (error) {
       // TIMEOUT WHILE TRYING TO GET ALL DATA

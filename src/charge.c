@@ -76,8 +76,7 @@ void charge_handle_state() {
     if (charge_data.charge_on &&
         global_millis - charge_data.last_charge > 3000) {
       charge_data.charge_on = 0;
-      snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-               "Shutdown");
+      snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,"Goodbye!");
       clear_vram();
       animations_reset();
       for (uint8_t i = 64; i > 0; i--) {

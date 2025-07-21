@@ -20,6 +20,7 @@ void logo_fill_percent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
   }
 }
 
+// DRAWS A LINE FROM POINT AT P(X1,Y1) TO P(X2,Y2) WITH BRIGHTNESS
 void logo_draw_line(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
                     uint8_t brightness) {
   int8_t dx = x2 - x1;

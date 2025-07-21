@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define TX_BUFFER_SIZE 150
+#define TX_BUFFER_SIZE 255
 #define RX_BUFFER_SIZE 100
 
 extern volatile char tx_buf[TX_BUFFER_SIZE];

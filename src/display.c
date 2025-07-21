@@ -21,6 +21,7 @@ volatile uint8_t line = 0;
 volatile uint8_t scaleCounter = 0;
 volatile uint8_t scrolling = 0;
 
+// DEFINES BASIC PROPERTIES OF THE DISPLAY, LIKE BRIGHTNESS OF LOGO & TEXT
 volatile struct DisplayState display_state = {
     .display_on = 1,
     .scroll_interval = 0,

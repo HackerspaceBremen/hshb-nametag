@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+// DEFINES KNOWN ANIMATION-IDs
 enum ANIMATIONS {
   LOGO_OFF = 0,
   LOGO_ON = 1,
@@ -16,7 +17,7 @@ enum ANIMATIONS {
   CIRCLES = 9,
   SPARKLE = 10,
   STRIPES = 11,
-  INVALID_ANIMATION = 12, // Needed to identify last animation value
+  INVALID_ANIMATION = 12,  // Needed to identify last animation value
 };
 
 void animations_reset();

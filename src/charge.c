@@ -26,16 +26,16 @@ void charge_display_state() {
     if (!(PINA & (1 << 7))) {
       logo_draw_line(0, 0, 14, 0, 32);
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-               "Battery Full");
+               STR_BATTERY_FULL);
       display_write_text(0, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);
     } else {
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-               "Charging");
+               STR_BATTERY_CHRG);
       display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 2, 64, 0);
     }
   } else {
     snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-             "Battery %d%%", adc_values.percent);
+             STR_BATTERY_PERC, adc_values.percent);
     display_write_text(0, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);
   }
 }
@@ -50,7 +50,9 @@ void charge_battery_check() {
       animations_reset();
       clear_vram();
       snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-               "Low Battery");
+               STR_BATTERY_LOW);
+      // REDUCE BRIGHTNESS TO MINIMUM VALUE 1 FOR LOGO, KEEP BRIGHTNESS OF TEXT
+      // AT 64
       display_write_text(3, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);
       _delay_ms(1000);
       button_check();  // Will go to sleep if lowBat==1
@@ -76,7 +78,8 @@ void charge_handle_state() {
     if (charge_data.charge_on &&
         global_millis - charge_data.last_charge > 3000) {
       charge_data.charge_on = 0;
-      snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,"Goodbye!");
+      snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
+               STR_DEVICE_OFF);
       clear_vram();
       animations_reset();
       for (uint8_t i = 64; i > 0; i--) {

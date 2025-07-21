@@ -48,6 +48,7 @@ int main(void) {
 
   slot_advance();
 
+  // MAIN LOOP
   while (1) {
     static uint32_t lastButton = 0;
     if ((uint32_t)(global_millis - lastButton) >= 10) {

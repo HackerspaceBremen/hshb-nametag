@@ -3,13 +3,13 @@
 import os
 import subprocess
 
-board_id = os.getenv("BOARD_ID", "24")
+board_id = os.getenv(
+    "BOARD_ID", "24"
+)  # PLACE YOUR BOARD ID HERE OR AS ENVIRONMENT PARAMETER
 
 try:  # FETCH GIT COMMIT HASH
     build_version = (
-        subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE
-        )
+        subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE)
         .stdout.decode()
         .strip()
     )

@@ -32,13 +32,15 @@ void button_update() {
 }
 
 static void on_low_battery() {
-  display_fade_text("Low Battery", 0);
+  display_fade_text(STR_BATTERY_LOW, 0);
   display_state.display_on = 0;  // Disable Display
 }
 
 static void wake_up_routine() {
-  snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, " Board %03d",BOARD_ID);
-  // snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, "Start %03d",BOARD_ID);
+  snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
+           STR_DEVICE_ON, BOARD_ID);
+  // snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, "Start
+  // %03d",BOARD_ID);
   display_fade_text("", 0);
 }
 
@@ -120,17 +122,17 @@ void button_check() {
   } else if (!button_state.button && button_state.new_button_event &&
              button_press_duration > BUTTON_LONG_PRESS_TIME) {
     button_state.new_button_event = 0;
-    display_fade_text("Goodbye!", 1);
+    display_fade_text(STR_DEVICE_OFF, 1);
     enter_deepsleep();
   } else if (!button_state.button && button_state.new_button_event &&
              button_press_duration > BUTTON_MEDIUM_PRESS_TIME) {
     logo_fill_percent(adc_values.percent, 19, 32, 1);
     snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
-             "Battery %d%%", adc_values.percent);
+             STR_BATTERY_PERC, adc_values.percent);
     display_write_text(0, (char*)display_state.sysmsg_buffer, 1, 0, 64, 0);
     _delay_ms(500);
-    snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE, "%d Volt",
-             adc_values.voltage + 5);
+    snprintf((char*)display_state.sysmsg_buffer, SYSMSG_BUFFER_SIZE,
+             STR_BATTERY_VOLT, adc_values.voltage + 5);
     display_state.sysmsg_buffer[3] = display_state.sysmsg_buffer[2];
     display_state.sysmsg_buffer[2] = display_state.sysmsg_buffer[1];
     display_state.sysmsg_buffer[1] = '.';

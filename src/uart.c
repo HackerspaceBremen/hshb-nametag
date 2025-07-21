@@ -55,7 +55,7 @@ uint8_t uart_writeln_flash_str(const char *flashStr) {
   if (!(UCSRB & (1 << UDRIE))) {
     uint8_t len = 0;
     // Reserve 2 to add \r\n
-    while( len < TX_BUFFER_SIZE - 2 ) {
+    while (len < TX_BUFFER_SIZE - 2) {
       tx_buf[len] = pgm_read_byte(flashStr + len);
       if (tx_buf[len] == '\0') {
         break;

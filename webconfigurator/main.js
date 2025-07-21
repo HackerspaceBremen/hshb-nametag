@@ -872,9 +872,6 @@ function receiveUART(msg) {
       ", Build: " +
       deviceInfo["build"] +
       " )";
-    // TRIGGER SLOT LOADING
-    gettingData = true;
-    gettingSlot = -1;
   }
 
   console.log("UART RECEIVED: " + msg);
@@ -885,6 +882,7 @@ function receiveUART(msg) {
       sendUART("R " + gettingSlot + "\n");
     } else {
       gettingData = false;
+      sendUART("I\n"); // FETCH HARDWARE INFO
     }
   }
 }
@@ -929,8 +927,10 @@ function connectedUART() {
     setStateToConnected(); // WE HAVE A VALID CONNECTION NOW
     // CONFIGURE TO FETCH ALL DATA FROM DEVICE STARTING WITH SLOT 0
     try {
+      gettingData = true;
+      gettingSlot = 0;
       defaultSet.displayName = "Current Device Config";
-      sendUART("I\n");
+      sendUART("R 0\n");
     } catch (error) {
       // TIMEOUT WHILE TRYING TO GET ALL DATA
       console.error(error);

@@ -336,6 +336,15 @@ h1 {
   cursor: pointer;
 }
 
+.hardwareinfo {
+  font-size: smaller;
+  position: relative;
+  top: -10px;
+  margin-top: 0px;
+  margin-left: 70px;
+  color: rgb(137, 210, 255);
+}
+
 .editsymbol {
   position: relative;
   top: -10px;

@@ -23,6 +23,7 @@ let messageBuffer = "";
 let timeoutId = null;
 let defaultDeviceConfigurationSet = null;
 let shouldPrepareDownloadAfterChange = false;
+let deviceInfo = { boardId: "", build: "", firmware: "" };
 const slotsContainer = document.getElementById("slots");
 
 /********************************
@@ -122,7 +123,7 @@ DeviceSet.fromJSON = function (json) {
 class DeviceSlot {
   // CLASS CONSTANTS DEFINING VALUE LIMITS
   static MAX_NUM_TEXT_TYPE_IDS = 3;
-  static MAX_NUM_ANIMATION_IDS = 10;
+  static MAX_NUM_ANIMATION_IDS = 12;
   static MAX_TEXT_LENGTH = 75;
   static MIN_OFFSET_X = 0;
   static MAX_OFFSET_X = 255;
@@ -233,6 +234,8 @@ class DeviceSlot {
     html += `<option id="animationOption-${i}-7" value="7">Rotate</option>`;
     html += `<option id="animationOption-${i}-8" value="8">Rotate Fill</option>`;
     html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
+    html += `<option id="animationOption-${i}-10" value="10">Sparkles</option>`;
+    html += `<option id="animationOption-${i}-11" value="11">Stripes</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;
@@ -859,6 +862,20 @@ function receiveUART(msg) {
     }
     configurationSynchronize();
   }
+  if (msg.includes("board_id")) {
+    deviceInfo = JSON.parse(msg);
+    document.getElementById("hardwareinfo").innerHTML =
+      "(Board ID: " +
+      deviceInfo["board_id"] +
+      ", Firmware: " +
+      deviceInfo["firmware"] +
+      ", Build: " +
+      deviceInfo["build"] +
+      " )";
+    // TRIGGER SLOT LOADING
+    gettingData = true;
+    gettingSlot = -1;
+  }
 
   console.log("UART RECEIVED: " + msg);
 
@@ -905,17 +922,15 @@ async function sendUART(msg) {
   }
 }
 
-// CALLED A SECOND AFTER WE HAVE FOUND VALID PORT FOR INITIAL COMMUNICATION WITH DEVICE (DEVICE HAS TO ANSWER WITHING 3 SECONDS)
+// CALLED A SECOND AFTER WE HAVE FOUND VALID PORT FOR INITIAL COMMUNICATION WITH DEVICE (DEVICE HAS TO ANSWER WITHIN 3 SECONDS)
 function connectedUART() {
   setTimeout(async () => {
     console.log("UART CONNECTED. REQUESTING DEVICE DATA...");
     setStateToConnected(); // WE HAVE A VALID CONNECTION NOW
     // CONFIGURE TO FETCH ALL DATA FROM DEVICE STARTING WITH SLOT 0
-    gettingData = true;
-    gettingSlot = 0;
     try {
       defaultSet.displayName = "Current Device Config";
-      sendUART("R 0\n");
+      sendUART("I\n");
     } catch (error) {
       // TIMEOUT WHILE TRYING TO GET ALL DATA
       console.error(error);
@@ -1242,6 +1257,8 @@ function setStateToDisconnected() {
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
   document.getElementById("devicename").innerHTML = "Unknown device";
+  document.getElementById("hardwareinfo").innerHTML = "";
+
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;

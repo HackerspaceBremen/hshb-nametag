@@ -226,8 +226,8 @@ static void cmd_list_slots() {
 static void cmd_identify_board() {
   uart_writeln_flash_str(
       F("{ \"board_id\" : \"" STR(BOARD_ID) "\" , \"build\" : \"" STR(
-          BUILD_VERSION) "\", \"firmware\" : \"" STR(FIRMWARE_VERSION_STR) "\" "
-                                                                           "}"));
+          BUILD_VERSION) "\", \"firmware\" : \"" STR(FIRMWARE_VERSION) "\" "
+                                                                       "}"));
 }
 
 struct command {

@@ -124,7 +124,7 @@ class DeviceSlot {
   // CLASS CONSTANTS DEFINING VALUE LIMITS
   static MAX_NUM_TEXT_TYPE_IDS = 3;
   static MAX_NUM_ANIMATION_IDS = 13;
-  static MAX_TEXT_LENGTH = 75;
+  static MAX_TEXT_LENGTH = 73;
   static MIN_OFFSET_X = 0;
   static MAX_OFFSET_X = 255;
   static MIN_CHAR_SPACE = 0;

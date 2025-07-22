@@ -4,6 +4,11 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 
+// universal asynchronous receiver-transmitter (uart)
+// SEE:
+// https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter
+
+// TRANSFER SPEED
 #define BAUD 9600
 
 // Calculate the UBRR value for the desired baud rate

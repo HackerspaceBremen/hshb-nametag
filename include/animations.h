@@ -17,7 +17,8 @@ enum ANIMATIONS {
   CIRCLES = 9,
   SPARKLE = 10,
   STRIPES = 11,
-  INVALID_ANIMATION = 12,  // Needed to identify last animation value
+  FASTWAVE = 12,
+  INVALID_ANIMATION = 13,  // Needed to identify last animation value
 };
 
 void animations_reset();
@@ -26,7 +27,7 @@ void animation_line(uint8_t fill);
 void animation_rotate(uint8_t fill);
 void animation_matrix();
 void animation_sweep();
-void animation_wave();
+void animation_wave(uint8_t speed);
 void animation_circles();
 void animation_stripes(uint8_t length);
 void animation_sparkle();

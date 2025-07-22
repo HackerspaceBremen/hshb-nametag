@@ -123,7 +123,7 @@ DeviceSet.fromJSON = function (json) {
 class DeviceSlot {
   // CLASS CONSTANTS DEFINING VALUE LIMITS
   static MAX_NUM_TEXT_TYPE_IDS = 3;
-  static MAX_NUM_ANIMATION_IDS = 12;
+  static MAX_NUM_ANIMATION_IDS = 13;
   static MAX_TEXT_LENGTH = 75;
   static MIN_OFFSET_X = 0;
   static MAX_OFFSET_X = 255;
@@ -236,6 +236,7 @@ class DeviceSlot {
     html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
     html += `<option id="animationOption-${i}-10" value="10">Sparkles</option>`;
     html += `<option id="animationOption-${i}-11" value="11">Stripes</option>`;
+    html += `<option id="animationOption-${i}-12" value="12">Fast Wave</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;

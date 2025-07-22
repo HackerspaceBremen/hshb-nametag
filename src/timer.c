@@ -10,6 +10,7 @@
 #include "uart.h"
 
 volatile uint32_t global_millis = 0;
+volatile uint32_t global_counter = 0;
 
 volatile uint8_t adc_timer_counter = 0;
 volatile uint8_t scroll_timer_counter = 0;
@@ -45,4 +46,5 @@ ISR(TIMER1_COMPA_vect) {
   }
 
   global_millis += 10;
+  global_counter += 1;
 }

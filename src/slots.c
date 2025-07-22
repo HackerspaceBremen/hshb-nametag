@@ -167,7 +167,7 @@ void slot_handle() {
         animation_sweep(32, 1);
         break;
       case WAVE:
-        animation_wave();
+        animation_wave(0);
         break;
       case LINES:
         animation_line(0);
@@ -189,6 +189,9 @@ void slot_handle() {
         break;
       case SPARKLE:
         animation_sparkle();
+        break;
+      case FASTWAVE:
+        animation_wave(1);
         break;
       default:  // Includes LOGO_OFF
         for (uint16_t k = LOGO_START; k < LOGO_END; k++)

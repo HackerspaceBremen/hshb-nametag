@@ -1,4 +1,5 @@
 #include <avr/pgmspace.h>
+#include <util/delay.h>
 
 #include "display.h"
 #include "logo.h"
@@ -11,12 +12,16 @@ uint8_t quarter = 0;
 uint8_t counter0 = 0;
 uint8_t counter1 = 0;
 uint8_t counter2 = 0;
+uint8_t x = 0;
+uint8_t y = 0;
 
 const uint8_t circleXPos[] PROGMEM = {6, 7, 9, 2, 12};
 const uint8_t circleYPos[] PROGMEM = {2, 12, 7, 11, 14};
-const uint8_t bArray[] PROGMEM = {
+const uint8_t b1Array[] PROGMEM = {
     5,  5,  7,  10, 13, 18, 23, 28, 34, 39, 44, 49, 53, 57, 59, 61, 63, 64,
     63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
+const uint8_t b2Array[] PROGMEM = {1,   2,  4,  8,  16, 24, 32, 64, 128,
+                                   255, 64, 32, 24, 16, 12, 8,  4,  2};
 uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
 
 // GETS CALLED BEFORE EACH NEW ANIMATION
@@ -239,46 +244,86 @@ void animation_sweep() {
   }
 }
 
-void animation_wave() {
+void animation_wave(uint8_t speed) {
   if (counter0 < 1) {
     counter0++;
   } else {
     counter0 = 0;
 
     i = j;
-    for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
-      logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
-                     pgm_read_byte(&bArray[i]) + 10);
-      i++;
-      if (i >= 35) i = 0;
+    if (speed == 0) {
+      for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
+        logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
+                       pgm_read_byte(&b1Array[i]) + 10);
+        i++;
+        if (i >= 35) i = 0;
+      }
+      j++;
+      if (j >= 35) j = 0;
+    } else {
+      for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
+        logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
+                       pgm_read_byte(&b2Array[i]));
+        i++;
+        if (i >= 17) i = 0;
+      }
+      j++;
+      if (j >= 17) j = 0;
     }
-    j++;
-    if (j >= 35) j = 0;
   }
 }
 
-const uint8_t ra[] PROGMEM = {0, 3, 8, 11};
-const uint8_t ca[] PROGMEM = {8, 7, 5, 3};
-
-const uint8_t sparkX[] PROGMEM = {8, 7, 5, 3};
-const uint8_t sparkY[] PROGMEM = {12, 3, 8, 11};
-const uint8_t bright[] PROGMEM = {64, 32, 16, 8, 4, 2};
+const uint8_t sparkY[] PROGMEM = {12, 3,  8, 11, 2,  7,  12,
+                                  14, 14, 1, 7,  11, 15, 11};
+const uint8_t sparkX[] PROGMEM = {8, 7, 6, 2, 8, 8, 1, 12, 5, 5, 6, 6, 4, 9};
+const uint8_t bright1[] PROGMEM = {255, 200, 150, 128, 90, 64, 42,
+                                   32,  24,  16,  8,   4,  2};
+const uint8_t bright2[] PROGMEM = {255, 128, 90, 60, 30, 16, 12,
+                                   8,   4,   2,  1,  0,  0};
 
 // CREATES RANDOMLY APPEARING STARS ON THE LOGO AREA
 void animation_sparkle() {
+  uint8_t b1 = 0;
+  uint8_t b2 = 0;
+  int8_t x_diff = 0;
+  int8_t y_diff = 0;
+  x = pgm_read_byte(&sparkX[step]) + x_diff;
+  y = pgm_read_byte(&sparkY[step]) + y_diff;
+
   if (counter0 < 1) {
     counter0++;
   } else {
     counter0 = 0;
-    logo_set_xy(pgm_read_byte(&sparkX[step]), pgm_read_byte(&sparkY[step]),
-                pgm_read_byte(&bright[i]));
-    i++;  // BRIGHTNESS
-    if (i > 5) {
-      step++;
+    if (i == 0) {
+      // ADD SOME RANDOMNESS FOR X COORD
+      x_diff = global_counter % 2;
+      if (x_diff == 0) {
+        x_diff = -1;
+      }
+      // ADD SOME RANDOMNESS FOR Y COORD
+      y_diff = global_counter % 2;
+      if (y_diff == 0) {
+        y_diff = -1;
+      }
       clear_vram_logo();  // CLEAN CANVAS
+      _delay_ms(1000);
+    }
+    b1 = pgm_read_byte(&bright1[i]);
+    b2 = pgm_read_byte(&bright2[i]);
+    logo_set_xy(x, y, b1);
+    logo_set_xy(x - 1, y, b2);
+    logo_set_xy(x + 1, y, b2);
+    logo_set_xy(x, y + 1, b2);
+    logo_set_xy(x, y - 1, b2);
+    // _delay_ms(50);
+    i++;           // BRIGHTNESS
+    if (i > 12) {  // LEN BRIGHTNESSES
       i = 0;
-      if (step > 3) {
+      step += 1;
+      if (step > 14) {  // LEN SPARKS
         step = 0;
+        x = pgm_read_byte(&sparkX[step]) + x_diff;
+        y = pgm_read_byte(&sparkY[step]) + y_diff;
       }
     }
   }

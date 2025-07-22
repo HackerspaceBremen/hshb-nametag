@@ -30,6 +30,6 @@ void animation_sweep();
 void animation_wave(uint8_t speed);
 void animation_circles();
 void animation_stripes(uint8_t length);
-void animation_sparkle();
+void animation_stars();
 
 #endif

@@ -14,15 +14,7 @@ uint8_t counter1 = 0;
 uint8_t counter2 = 0;
 uint8_t x = 0;
 uint8_t y = 0;
-
-const uint8_t circleXPos[] PROGMEM = {6, 7, 9, 2, 12};
-const uint8_t circleYPos[] PROGMEM = {2, 12, 7, 11, 14};
-const uint8_t b1Array[] PROGMEM = {
-    5,  5,  7,  10, 13, 18, 23, 28, 34, 39, 44, 49, 53, 57, 59, 61, 63, 64,
-    63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
-const uint8_t b2Array[] PROGMEM = {1,   2,  4,  8,  16, 24, 32, 64, 128,
-                                   255, 64, 32, 24, 16, 12, 8,  4,  2};
-uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
+uint8_t pseudo_random = 0;
 
 // GETS CALLED BEFORE EACH NEW ANIMATION
 void animations_reset() {
@@ -137,6 +129,10 @@ void animation_rotate(uint8_t fill) {
   }
 }
 
+// CIRCLE POSITIONS
+const uint8_t circleXPos[] PROGMEM = {6, 7, 9, 2, 12};
+const uint8_t circleYPos[] PROGMEM = {2, 12, 7, 11, 14};
+
 void animation_circles() {
   if (counter0 < 2) {
     counter0++;
@@ -158,6 +154,9 @@ void animation_circles() {
     }
   }
 }
+
+// DEFINED LINE POSITIONS
+uint8_t logoLines[15] = {4, 13, 6, 16, 2, 15, 7, 11, 15, 8, 10, 1, 17, 9, 18};
 
 void animation_matrix() {
   if (counter0 > 6) {
@@ -244,14 +243,20 @@ void animation_sweep() {
   }
 }
 
+// BRIGHTNESS VALUES FOR WAVES
+const uint8_t b1Array[] PROGMEM = {
+    5,  5,  7,  10, 13, 18, 23, 28, 34, 39, 44, 49, 53, 57, 59, 61, 63, 64,
+    63, 61, 59, 57, 53, 49, 44, 39, 34, 28, 23, 18, 13, 10, 7,  5,  5};
+const uint8_t b2Array[] PROGMEM = {1,   2,  4,  8,  16, 24, 32, 64, 128,
+                                   255, 64, 32, 24, 16, 12, 8,  4,  2};
+
 void animation_wave(uint8_t speed) {
   if (counter0 < 1) {
     counter0++;
   } else {
     counter0 = 0;
-
     i = j;
-    if (speed == 0) {
+    if (speed == 0) {  // WAVE
       for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
         logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
                        pgm_read_byte(&b1Array[i]) + 10);
@@ -260,8 +265,8 @@ void animation_wave(uint8_t speed) {
       }
       j++;
       if (j >= 35) j = 0;
-    } else {
-      for (uint8_t k = LOGO_ROW_FIRST; k <= LOGO_ROW_LAST; k++) {
+    } else {  // FAST WAVE
+      for (uint8_t k = LOGO_ROW_LAST; k > LOGO_ROW_FIRST; k--) {
         logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
                        pgm_read_byte(&b2Array[i]));
         i++;
@@ -273,40 +278,39 @@ void animation_wave(uint8_t speed) {
   }
 }
 
-const uint8_t sparkY[] PROGMEM = {12, 3,  8, 11, 2,  7,  12,
-                                  14, 14, 1, 7,  11, 15, 11};
-const uint8_t sparkX[] PROGMEM = {8, 7, 6, 2, 8, 8, 1, 12, 5, 5, 6, 6, 4, 9};
-const uint8_t bright1[] PROGMEM = {255, 200, 150, 128, 90, 64, 42,
-                                   32,  24,  16,  8,   4,  2};
-const uint8_t bright2[] PROGMEM = {255, 128, 90, 60, 30, 16, 12,
-                                   8,   4,   2,  1,  0,  0};
+// PREDEFINED STAR COORDINATES
+const uint8_t sparkY[] PROGMEM = {12, 3,  8,  11, 2, 7,  12, 14, 14, 1,
+                                  7,  11, 15, 11, 8, 13, 12, 6,  18, 7};
+const uint8_t sparkX[] PROGMEM = {8, 7, 6, 2, 8, 8, 1,  12, 5, 5,
+                                  6, 6, 4, 9, 9, 8, 11, 8,  3, 4};
+const uint8_t bright1[] PROGMEM = {255, 230, 210, 200, 190, 180, 165,
+                                   150, 140, 128, 90,  64,  50,  42,
+                                   32,  24,  16,  11,  8,   4,   2};
+const uint8_t bright2[] PROGMEM = {255, 200, 150, 128, 115, 100, 95,
+                                   90,  75,  60,  45,  30,  16,  12,
+                                   8,   6,   4,   2,   1,   0,   0};
 
-// CREATES RANDOMLY APPEARING STARS ON THE LOGO AREA
-void animation_sparkle() {
+// CREATES PSEUDO-RANDOMLY APPEARING STARS ON THE LOGO AREA
+void animation_stars() {
   uint8_t b1 = 0;
   uint8_t b2 = 0;
-  int8_t x_diff = 0;
-  int8_t y_diff = 0;
-  x = pgm_read_byte(&sparkX[step]) + x_diff;
-  y = pgm_read_byte(&sparkY[step]) + y_diff;
+  x = pgm_read_byte(&sparkX[step]);
+  y = pgm_read_byte(&sparkY[step]);
 
   if (counter0 < 1) {
     counter0++;
   } else {
     counter0 = 0;
     if (i == 0) {
-      // ADD SOME RANDOMNESS FOR X COORD
-      x_diff = global_counter % 2;
-      if (x_diff == 0) {
-        x_diff = -1;
-      }
-      // ADD SOME RANDOMNESS FOR Y COORD
-      y_diff = global_counter % 2;
-      if (y_diff == 0) {
-        y_diff = -1;
-      }
       clear_vram_logo();  // CLEAN CANVAS
-      _delay_ms(1000);
+      pseudo_random = global_counter % 60;
+      if (pseudo_random < 20) {
+        _delay_ms(750);
+      } else if (pseudo_random >= 20 && pseudo_random < 40) {
+        _delay_ms(1000);
+      } else {
+        _delay_ms(1250);
+      }
     }
     b1 = pgm_read_byte(&bright1[i]);
     b2 = pgm_read_byte(&bright2[i]);
@@ -317,14 +321,23 @@ void animation_sparkle() {
     logo_set_xy(x, y - 1, b2);
     // _delay_ms(50);
     i++;           // BRIGHTNESS
-    if (i > 12) {  // LEN BRIGHTNESSES
+    if (i > 20) {  // LEN BRIGHTNESSES
       i = 0;
-      step += 1;
-      if (step > 14) {  // LEN SPARKS
-        step = 0;
-        x = pgm_read_byte(&sparkX[step]) + x_diff;
-        y = pgm_read_byte(&sparkY[step]) + y_diff;
+      // ADD SOME RANDOMNESS FOR STEP FORWARD BASED ON STEPCOUNTER
+      pseudo_random = global_counter % 60;
+      if (pseudo_random < 20) {
+        step = step + 1;
+      } else if (pseudo_random >= 20 && pseudo_random < 40) {
+        step = step + 2;
+      } else {
+        step = step + 3;
       }
+      if (step > 19) {  // LEN SPARKS
+        step = step - 19;
+      }
+      // PICK NEW STAR POSITION
+      x = pgm_read_byte(&sparkX[step]);
+      y = pgm_read_byte(&sparkY[step]);
     }
   }
 }

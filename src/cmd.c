@@ -1,3 +1,5 @@
+#include "cmd.h"
+
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -13,12 +15,6 @@
 #include "display.h"
 #include "slots.h"
 #include "uart.h"
-
-#define F(string_literal) (PSTR(string_literal))
-
-// See https://stackoverflow.com/a/5459929
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
 
 // CMD HANDLE: FOR INVALID RECEIVED CMD
 static void cmd_invalid_command() {

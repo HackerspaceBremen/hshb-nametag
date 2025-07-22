@@ -234,7 +234,7 @@ class DeviceSlot {
     html += `<option id="animationOption-${i}-7" value="7">Rotate</option>`;
     html += `<option id="animationOption-${i}-8" value="8">Rotate Fill</option>`;
     html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
-    html += `<option id="animationOption-${i}-10" value="10">Sparkles</option>`;
+    html += `<option id="animationOption-${i}-10" value="10">Stars</option>`;
     html += `<option id="animationOption-${i}-11" value="11">Stripes</option>`;
     html += `<option id="animationOption-${i}-12" value="12">Fast Wave</option>`;
     html += `</select></fieldset>`;
@@ -365,7 +365,7 @@ function prepareDownload() {
 // SHOW WINDOW WHERE EMBED CODE IS SHOWN
 function showEmbedShare() {
   const shareButton = document.getElementById("share");
-  windowShowWithTypeAndTitleAndInnerHtml(
+  windowShowWithTitleTypeFooterAndInnerHtml(
     "SHARE",
     "share",
     "Copied to clipboard.",
@@ -379,7 +379,7 @@ function showEmbedShare() {
 // SHOW UPLOAD/IMPORT WINDOW
 function prepareUpload() {
   let htmlInjection = `<form><input type="file" id="fileinput" /><div id="uploadStatus" style="margin-top:20px;margin-bottom:20px;">&nbsp;</div></form>`;
-  windowShowWithTypeAndTitleAndInnerHtml(
+  windowShowWithTitleTypeFooterAndInnerHtml(
     "IMPORT",
     "info",
     "Please choose one .json configuration file stored to be imported.",
@@ -546,7 +546,7 @@ function scrollToElementWithId(element_id) {
 }
 
 // SHOW A MESSAGE IN A WINDOW WITH A CERTAIN STYLE AND CONTENT
-function windowShowWithTypeAndTitleAndInnerHtml(
+function windowShowWithTitleTypeFooterAndInnerHtml(
   title,
   type,
   footer,
@@ -562,6 +562,10 @@ function windowShowWithTypeAndTitleAndInnerHtml(
   if (type == "info") {
     document.getElementById("windowcontent").style.backgroundColor = "#017dcb";
     document.getElementById("window").style.backgroundColor = "#1f97e1";
+  }
+  if (type == "success") {
+    document.getElementById("windowcontent").style.backgroundColor = "#00841a";
+    document.getElementById("window").style.backgroundColor = "#00ae23";
   }
   if (type == "share") {
     document.getElementById("windowcontent").style.backgroundColor = "#8a007c";
@@ -703,9 +707,15 @@ function writeSlot(slt) {
       writeSlot(writingSlot);
     }, "2000");
   } else {
-    // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
+    // STOP WRITING SLOTS WHEN LAST SLOT WAS WRITTEN
     writingData = false;
     spinnerShouldShow = false;
+    windowShowWithTitleTypeFooterAndInnerHtml(
+      "UPDATED",
+      "success",
+      "Slot(s) successfully updated.",
+      "Remember to download your configuration when you are done.",
+    );
   }
   writeConfirmation(slt);
 }
@@ -795,7 +805,7 @@ async function readLoop() {
   } catch (error) {
     console.error("READ LOOP: FAILED WITH ERROR\n" + error);
     reader = null;
-    windowShowWithTypeAndTitleAndInnerHtml(
+    windowShowWithTitleTypeFooterAndInnerHtml(
       "ERROR",
       "error",
       "Error while trying to read from device.",
@@ -866,13 +876,13 @@ function receiveUART(msg) {
   if (msg.includes("board_id")) {
     deviceInfo = JSON.parse(msg);
     document.getElementById("hardwareinfo").innerHTML =
-      "(Board ID: " +
+      "Board #" +
       deviceInfo["board_id"] +
-      ", Firmware: " +
+      " &middot; v" +
       deviceInfo["firmware"] +
-      ", Build: " +
+      " (" +
       deviceInfo["build"] +
-      " )";
+      ")";
   }
 
   console.log("UART RECEIVED: " + msg);
@@ -905,7 +915,7 @@ async function sendUART(msg) {
       if (error.className == "NetworkError") {
         console.error("UART SENDING: (NetworkError)");
       }
-      windowShowWithTypeAndTitleAndInnerHtml(
+      windowShowWithTitleTypeFooterAndInnerHtml(
         "ERROR",
         "error",
         "An error occurred while trying to send data.",
@@ -1094,7 +1104,7 @@ async function checkOpenPort() {
             console.log(error);
             let errorString = "" + error;
             if (errorString.indexOf("NetworkError") > -1) {
-              windowShowWithTypeAndTitleAndInnerHtml(
+              windowShowWithTitleTypeFooterAndInnerHtml(
                 "ERROR",
                 "error",
                 "Port already in use.",
@@ -1325,7 +1335,7 @@ document.getElementById("connect").addEventListener("click", async () => {
       reconnectToDevice();
     } else {
       console.error(error);
-      windowShowWithTypeAndTitleAndInnerHtml(
+      windowShowWithTitleTypeFooterAndInnerHtml(
         "INFO",
         "info",
         "No serial- / USB-port selected.",

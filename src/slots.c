@@ -188,7 +188,7 @@ void slot_handle() {
         animation_stripes(2);
         break;
       case SPARKLE:
-        animation_sparkle();
+        animation_stars();
         break;
       case FASTWAVE:
         animation_wave(1);

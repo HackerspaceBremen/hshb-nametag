@@ -1,5 +1,12 @@
 #include <avr/pgmspace.h>
 
+/***************************************************************************************
+ * THIS CONTAINS THE DECHARGING CURVES FOR THE BATTERIES DEPLOYED WITH THE KNOWN
+ *BOARDS THE CHARGING LOGIC REFERS TO THIS LOOKUP ARRAY OF VALUES TO DETERMINE,
+ *WHEN THE BATTERY IS CONSIDERED TO BE ON LOW VOLTAGE AND WHEN IT IS FULLY
+ *CHARGED. THIS IS BOARD DEPENDENT INFORMATION BECAUSE IT IS BETTERY DEPENDENT.
+ ****************************************************************************************/
+
 #if !defined(BOARD_ID)
 #error "BOARD_ID needs to be defined"
 #endif

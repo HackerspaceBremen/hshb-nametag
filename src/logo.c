@@ -1,6 +1,7 @@
 #include "logo.h"
 
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 
 #include "display.h"
 
@@ -11,15 +12,18 @@ void logo_fill_percent(int8_t perc, uint8_t full, uint8_t onB, uint8_t offB) {
   } else if (perc > 100) {
     leds = full;
   }
-  for (uint8_t i = 0; i <= 18; i++) {
+  for (uint8_t i = 0; i <= LOGO_ROW_LAST; i++) {
     if (i < leds) {
-      logo_draw_line(0, 18 - i, 14, 18 - i, onB);
+      logo_draw_line(0, LOGO_ROW_LAST - i, LOGO_COL_LAST, LOGO_ROW_LAST - i,
+                     onB);
     } else {
-      logo_draw_line(0, 18 - i, 14, 18 - i, offB);
+      logo_draw_line(0, LOGO_ROW_LAST - i, LOGO_COL_LAST, LOGO_ROW_LAST - i,
+                     offB);
     }
   }
 }
 
+// DRAWS A LINE FROM POINT AT P(X1,Y1) TO P(X2,Y2) WITH BRIGHTNESS
 void logo_draw_line(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
                     uint8_t brightness) {
   int8_t dx = x2 - x1;
@@ -67,10 +71,11 @@ void logo_draw_circle(int8_t x, int8_t y, int8_t r, uint8_t brightness) {
   }
 }
 
+// TRANSLATES X/Y-COORD TO PIXEL ADRESS ON LOGO (WAY FASTER THAN MEM-LOOKUP)
 void logo_set_xy(uint8_t x, uint8_t y, uint8_t brightness) {
-  if (x > 14 || y > 18) return;
+  if (x > LOGO_COL_LAST || y > LOGO_ROW_LAST) return;
 
-  uint16_t pix = x + y * 15;
+  uint16_t pix = x + y * (LOGO_COL_LAST + 1);
 
   switch (pix) {
     case (5):
@@ -402,3 +407,32 @@ void logo_set_xy(uint8_t x, uint8_t y, uint8_t brightness) {
       break;
   }
 }
+
+// FOLLOWING IS TOO SLOW BC. OF MEM-LOOKUP
+/*
+// STARTS AT 420 .. 521 TO MAP X/Y-COORD TO PIXEL ADRESS
+const uint16_t pixel[] PROGMEM = {
+    5,   19,  20,  23,  24,  35,  36,  37,  28,  39,  40,  51,  52,  53,  64,
+    67,  71,  80,  81,  82,  83,  84,  85,  96,  98,  99,  108, 109, 110, 111,
+    112, 113, 114, 116, 124, 125, 126, 127, 128, 129, 130, 136, 141, 144, 151,
+    152, 156, 159, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 180, 181,
+    182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 195, 196, 199, 200,
+    201, 202, 203, 204, 205, 206, 207, 208, 214, 215, 216, 217, 218, 221, 222,
+    223, 229, 230, 237, 239, 244, 252, 258, 267, 272, 273, 281};
+
+// TRANSLATES X/Y-COORD TO PIXEL ADRESS ON LOGO
+void logo_set_xy(uint8_t x, uint8_t y, uint8_t brightness) {
+  if (x > LOGO_COL_LAST || y > LOGO_ROW_LAST) return;
+  uint16_t pix = x + y * (LOGO_COL_LAST + 1);
+  uint16_t current_pix = 0;
+  uint16_t adress = LOGO_START;
+  for (uint8_t i = 0; i < 101; i++) {
+    current_pix = pgm_read_word(&pixel[i]);
+    if (current_pix == pix) {
+      adress = adress + i;
+      vRAM[adress] = brightness;
+    }
+  }
+}
+
+*/

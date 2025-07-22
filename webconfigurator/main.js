@@ -23,6 +23,7 @@ let messageBuffer = "";
 let timeoutId = null;
 let defaultDeviceConfigurationSet = null;
 let shouldPrepareDownloadAfterChange = false;
+let deviceInfo = { boardId: "", build: "", firmware: "" };
 const slotsContainer = document.getElementById("slots");
 
 /********************************
@@ -122,7 +123,7 @@ DeviceSet.fromJSON = function (json) {
 class DeviceSlot {
   // CLASS CONSTANTS DEFINING VALUE LIMITS
   static MAX_NUM_TEXT_TYPE_IDS = 3;
-  static MAX_NUM_ANIMATION_IDS = 10;
+  static MAX_NUM_ANIMATION_IDS = 13;
   static MAX_TEXT_LENGTH = 75;
   static MIN_OFFSET_X = 0;
   static MAX_OFFSET_X = 255;
@@ -233,6 +234,9 @@ class DeviceSlot {
     html += `<option id="animationOption-${i}-7" value="7">Rotate</option>`;
     html += `<option id="animationOption-${i}-8" value="8">Rotate Fill</option>`;
     html += `<option id="animationOption-${i}-9" value="9">Circles</option>`;
+    html += `<option id="animationOption-${i}-10" value="10">Stars</option>`;
+    html += `<option id="animationOption-${i}-11" value="11">Stripes</option>`;
+    html += `<option id="animationOption-${i}-12" value="12">Fast Wave</option>`;
     html += `</select></fieldset>`;
     html += `</div>`;
     slotDiv.innerHTML = html;
@@ -262,7 +266,10 @@ DeviceSlot.fromJSON = function (json) {
 // GET THE CURRENT ACTIVE DEVICE CONFIG
 function defaultSet() {
   if (defaultDeviceConfigurationSet == null) {
-    defaultDeviceConfigurationSet = new DeviceSet("Default", null);
+    defaultDeviceConfigurationSet = new DeviceSet(
+      "Default Configuration",
+      null,
+    );
     for (let i = 0; i < MAX_NUM_SLOTS; i++) {
       let currentSlot = new DeviceSlot(i, 1, 0, 2, 1, "", 1, 1, false);
       defaultDeviceConfigurationSet.addSlot(currentSlot);
@@ -358,7 +365,7 @@ function prepareDownload() {
 // SHOW WINDOW WHERE EMBED CODE IS SHOWN
 function showEmbedShare() {
   const shareButton = document.getElementById("share");
-  windowShowWithTypeAndTitleAndInnerHtml(
+  windowShowWithTitleTypeFooterAndInnerHtml(
     "SHARE",
     "share",
     "Copied to clipboard.",
@@ -372,7 +379,7 @@ function showEmbedShare() {
 // SHOW UPLOAD/IMPORT WINDOW
 function prepareUpload() {
   let htmlInjection = `<form><input type="file" id="fileinput" /><div id="uploadStatus" style="margin-top:20px;margin-bottom:20px;">&nbsp;</div></form>`;
-  windowShowWithTypeAndTitleAndInnerHtml(
+  windowShowWithTitleTypeFooterAndInnerHtml(
     "IMPORT",
     "info",
     "Please choose one .json configuration file stored to be imported.",
@@ -539,7 +546,7 @@ function scrollToElementWithId(element_id) {
 }
 
 // SHOW A MESSAGE IN A WINDOW WITH A CERTAIN STYLE AND CONTENT
-function windowShowWithTypeAndTitleAndInnerHtml(
+function windowShowWithTitleTypeFooterAndInnerHtml(
   title,
   type,
   footer,
@@ -555,6 +562,10 @@ function windowShowWithTypeAndTitleAndInnerHtml(
   if (type == "info") {
     document.getElementById("windowcontent").style.backgroundColor = "#017dcb";
     document.getElementById("window").style.backgroundColor = "#1f97e1";
+  }
+  if (type == "success") {
+    document.getElementById("windowcontent").style.backgroundColor = "#00841a";
+    document.getElementById("window").style.backgroundColor = "#00ae23";
   }
   if (type == "share") {
     document.getElementById("windowcontent").style.backgroundColor = "#8a007c";
@@ -696,9 +707,15 @@ function writeSlot(slt) {
       writeSlot(writingSlot);
     }, "2000");
   } else {
-    // STOP WRITINg SLOTS WHEN LAST SLOT WAS WRITTEN
+    // STOP WRITING SLOTS WHEN LAST SLOT WAS WRITTEN
     writingData = false;
     spinnerShouldShow = false;
+    windowShowWithTitleTypeFooterAndInnerHtml(
+      "UPDATED",
+      "success",
+      "Slot(s) successfully updated.",
+      "Remember to download your configuration when you are done.",
+    );
   }
   writeConfirmation(slt);
 }
@@ -788,6 +805,12 @@ async function readLoop() {
   } catch (error) {
     console.error("READ LOOP: FAILED WITH ERROR\n" + error);
     reader = null;
+    windowShowWithTitleTypeFooterAndInnerHtml(
+      "ERROR",
+      "error",
+      "Error while trying to read from device.",
+      error,
+    );
     if (error.className == "NetworkError") {
       console.log("UART ERROR: Could not READ from device. (NetworkError)");
     }
@@ -850,6 +873,17 @@ function receiveUART(msg) {
     }
     configurationSynchronize();
   }
+  if (msg.includes("board_id")) {
+    deviceInfo = JSON.parse(msg);
+    document.getElementById("hardwareinfo").innerHTML =
+      "Board #" +
+      deviceInfo["board_id"] +
+      " &middot; v" +
+      deviceInfo["firmware"] +
+      " (" +
+      deviceInfo["build"] +
+      ")";
+  }
 
   console.log("UART RECEIVED: " + msg);
 
@@ -859,6 +893,7 @@ function receiveUART(msg) {
       sendUART("R " + gettingSlot + "\n");
     } else {
       gettingData = false;
+      sendUART("I\n"); // FETCH HARDWARE INFO
     }
   }
 }
@@ -880,7 +915,7 @@ async function sendUART(msg) {
       if (error.className == "NetworkError") {
         console.error("UART SENDING: (NetworkError)");
       }
-      windowShowWithTypeAndTitleAndInnerHtml(
+      windowShowWithTitleTypeFooterAndInnerHtml(
         "ERROR",
         "error",
         "An error occurred while trying to send data.",
@@ -896,15 +931,16 @@ async function sendUART(msg) {
   }
 }
 
-// CALLED A SECOND AFTER WE HAVE FOUND VALID PORT FOR INITIAL COMMUNICATION WITH DEVICE (DEVICE HAS TO ANSWER WITHING 3 SECONDS)
+// CALLED A SECOND AFTER WE HAVE FOUND VALID PORT FOR INITIAL COMMUNICATION WITH DEVICE (DEVICE HAS TO ANSWER WITHIN 3 SECONDS)
 function connectedUART() {
   setTimeout(async () => {
     console.log("UART CONNECTED. REQUESTING DEVICE DATA...");
     setStateToConnected(); // WE HAVE A VALID CONNECTION NOW
     // CONFIGURE TO FETCH ALL DATA FROM DEVICE STARTING WITH SLOT 0
-    gettingData = true;
-    gettingSlot = 0;
     try {
+      gettingData = true;
+      gettingSlot = 0;
+      defaultSet.displayName = "Current Device Config";
       sendUART("R 0\n");
     } catch (error) {
       // TIMEOUT WHILE TRYING TO GET ALL DATA
@@ -1068,7 +1104,7 @@ async function checkOpenPort() {
             console.log(error);
             let errorString = "" + error;
             if (errorString.indexOf("NetworkError") > -1) {
-              windowShowWithTypeAndTitleAndInnerHtml(
+              windowShowWithTitleTypeFooterAndInnerHtml(
                 "ERROR",
                 "error",
                 "Port already in use.",
@@ -1232,6 +1268,8 @@ function setStateToDisconnected() {
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
   document.getElementById("devicename").innerHTML = "Unknown device";
+  document.getElementById("hardwareinfo").innerHTML = "";
+
   if (openPortCheckTimer) {
     clearInterval(openPortCheckTimer);
     openPortCheckTimer = null;
@@ -1297,7 +1335,7 @@ document.getElementById("connect").addEventListener("click", async () => {
       reconnectToDevice();
     } else {
       console.error(error);
-      windowShowWithTypeAndTitleAndInnerHtml(
+      windowShowWithTitleTypeFooterAndInnerHtml(
         "INFO",
         "info",
         "No serial- / USB-port selected.",

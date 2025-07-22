@@ -164,11 +164,12 @@ h1 {
   z-index: 4;
   background-color: #017dcb;
   color: white;
-  width: 40%;
-  padding: 30px;
   position: fixed;
   top: 20%;
-  left: 30%;
+  left: 15%;
+  width: 60%;
+  min-width: 200px;
+  padding: 30px;
   border: 1px solid rgba(128, 128, 128, 0.662);
   text-align: center;
   border-radius: 7px;
@@ -204,11 +205,12 @@ h1 {
   z-index: 4;
   background-color: #cb0141;
   color: white;
-  width: 40%;
-  padding: 30px;
   position: fixed;
   top: 20%;
-  left: 30%;
+  left: 15%;
+  width: 60%;
+  min-width: 200px;
+  padding: 30px;
   border: 1px solid rgba(128, 128, 128, 0.662);
   text-align: center;
   border-radius: 7px;
@@ -336,20 +338,32 @@ h1 {
   cursor: pointer;
 }
 
-.editsymbol {
+.hardwareinfo {
+  font-size: smaller;
   position: relative;
   top: -10px;
-  display: none;
-  color: rgba(255, 255, 255, 0.473);
+  margin-top: 0px;
+  margin-left: 70px;
+  color: rgb(137, 210, 255);
+}
+
+.editsymbol {
+  width: 70px;
+  position: relative;
+  top: -10px;
+  display: inline;
+  color: rgba(0, 0, 0, 0);
   font-size: small;
 }
 
 .devicenameshown:hover + .editsymbol {
   display: inline;
+  color: rgba(255, 255, 255, 0.473);
 }
 
 .devicenameunknown:hover + .editsymbol {
   display: inline;
+  color: rgba(255, 255, 255, 0.473);
 }
 
 .setselector {

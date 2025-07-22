@@ -3,29 +3,33 @@
 
 #include <stdint.h>
 
+// DEFINES KNOWN ANIMATION-IDs
 enum ANIMATIONS {
-  LOGO_OFF,
-  LOGO_ON,
-  MATRIX,
-  SWEEP,
-  WAVE,
-  LINES,
-  LINES_FILLED,
-  ROTATE,
-  ROTATE_FILLED,
-  CIRCLES,
-
-  // Needed to identify last animation value
-  INVALID_ANIMATION,
+  LOGO_OFF = 0,
+  LOGO_ON = 1,
+  MATRIX = 2,
+  SWEEP = 3,
+  WAVE = 4,
+  LINES = 5,
+  LINES_FILLED = 6,
+  ROTATE = 7,
+  ROTATE_FILLED = 8,
+  CIRCLES = 9,
+  SPARKLE = 10,
+  STRIPES = 11,
+  FASTWAVE = 12,
+  INVALID_ANIMATION = 13,  // Needed to identify last animation value
 };
 
 void animations_reset();
 
 void animation_line(uint8_t fill);
 void animation_rotate(uint8_t fill);
-void animation_circles();
 void animation_matrix();
 void animation_sweep();
-void animation_wave();
+void animation_wave(uint8_t speed);
+void animation_circles();
+void animation_stripes(uint8_t length);
+void animation_stars();
 
 #endif

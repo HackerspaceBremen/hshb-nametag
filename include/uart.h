@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-#define TX_BUFFER_SIZE 150
+#define TX_BUFFER_SIZE \
+  255  // HAS EFFECT ON MEMORY CONSUMPTION (> 255 NOT RECOMMENDED)
 #define RX_BUFFER_SIZE 100
 
 extern volatile char tx_buf[TX_BUFFER_SIZE];

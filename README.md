@@ -38,6 +38,12 @@ A serial console can be opened by running
 $ pio device monitor
 ```
 
+## Flashing Tool
+
+To update the firmware of your tag you need to either follow above description to create and upload your own build, or if you got handed a `firmware.hex` file for your **board-id** you could install this on your own.
+
+Check out the [README](flashdirect/) in the `flashdirect` folder.
+
 ## Web configurator
 
 You can use the [WebConfigurator](https://hackerspacebremen.github.io/hshb-nametag/) locally on your computer to configure your tag. Just connect it to USB and open the webpage in a browser that supports USB-Serial connections.

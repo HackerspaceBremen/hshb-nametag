@@ -483,6 +483,12 @@ function loadDeviceSetIntoUI(deviceconfiguration) {
       setTextOptionsForSlot(i);
       showRemainingChars(i);
       spinnerShouldShow = false;
+      windowShowWithTitleTypeFooterAndInnerHtml(
+        "IMPORT",
+        "success",
+        "Importing configuration for slot(s) finished.",
+        "The configration data from the file was imported successfully.",
+      );
     }
   }, "3000");
 }
@@ -562,6 +568,11 @@ function windowShowWithTitleTypeFooterAndInnerHtml(
   if (type == "info") {
     document.getElementById("windowcontent").style.backgroundColor = "#017dcb";
     document.getElementById("window").style.backgroundColor = "#1f97e1";
+  }
+  if (type == "warn") {
+    document.getElementById("windowcontent").style.backgroundColor =
+      "#97840bff";
+    document.getElementById("window").style.backgroundColor = "#ddc212ff";
   }
   if (type == "success") {
     document.getElementById("windowcontent").style.backgroundColor = "#00841a";
@@ -713,7 +724,7 @@ function writeSlot(slt) {
     windowShowWithTitleTypeFooterAndInnerHtml(
       "UPDATED",
       "success",
-      "Slot(s) successfully updated.",
+      "Sending configuration for slot(s) finished.",
       "Remember to download your configuration when you are done.",
     );
   }
@@ -1242,8 +1253,7 @@ function setStateIncompatible() {
     "Please try to use a different browser for this operation! Chrome e.g. is one which is known to work fine with this configurator.";
   // BUTTON
   toggleClassForElementWithIdTo("connect", "unconnectable");
-  document.getElementById("connect").innerHTML =
-    "Connections via USB not supported by this Browser!";
+  document.getElementById("connect").innerHTML = "Connections unsupported...";
   // DEVICE
   toggleClassForElementWithIdTo("devicename", "devicenameunknown");
   document.getElementById("devicename").innerHTML = "Unknown device";
@@ -1319,6 +1329,14 @@ injectHtmlForSlotsToDOM();
 
 // ATTACH CLICK LISTENER TO CONNECT-BUTTON
 document.getElementById("connect").addEventListener("click", async () => {
+  if (!isBrowserCompatible()) {
+    windowShowWithTitleTypeFooterAndInnerHtml(
+      "INCOMPATIBLE",
+      "warn",
+      "This browser is not compatible.",
+      "The browser does not support the Web Serial API, which is needed to connect to devices at USB-ports. Please choose a browser which supports this capability and try again.",
+    );
+  }
   // REQUEST A PORT AND OPEN THE CONNECTION
   try {
     // REQUEST PORT IF WE HAVE NO PERMISSION TO A PORT YET (BROWSER WILL PRESENT LIST To SELECT FROM)

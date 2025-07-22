@@ -267,3 +267,6 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,linux,macos,windows,clion+all,visualstudiocode,platformio
 
 node_modules
+
+flashdirect/*.hex
+flashdirect/*.log

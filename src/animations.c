@@ -344,13 +344,13 @@ void animation_stars() {
 
 // CREATES STRIPES BEEING MOVED TOWARDS EACH OTHER
 void animation_stripes(uint8_t length) {
-  uint8_t on = display_state.animation_brightness_on;
   uint8_t off = display_state.animation_brightness_off;
+  uint8_t onUse = display_state.animation_brightness_on;
   int8_t stripe_length = length;
   int8_t stripe_start = -stripe_length;
   int8_t x_start = 0;
   int8_t x_end = 0;
-  uint8_t overflow = 30;
+  uint8_t overflow = length;
 
   if (counter0 < 1) {
     counter0++;
@@ -361,9 +361,11 @@ void animation_stripes(uint8_t length) {
       // CLEAR LINE
       logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k, off);
       if (k % 2 == 0) {  // ODD LINES
+        onUse = display_state.animation_brightness_on;
         x_start = i + stripe_start;
         x_end = i + stripe_start + stripe_length;
       } else {  // EVEN LINES
+        onUse = 8;
         x_start = LOGO_COL_LAST - i;
         x_end = LOGO_COL_LAST - i + stripe_length;
       }
@@ -382,19 +384,35 @@ void animation_stripes(uint8_t length) {
       // DRAW LINE
       if (i > LOGO_COL_FIRST - stripe_length + 1 &&
           i < LOGO_COL_LAST + stripe_length - 1) {  // ONLY DRAW LINES VALID
-        logo_draw_line(x_start, k, x_end, k, on);
+        logo_draw_line(x_start, k, x_end, k, onUse);
       }
     }
     if (j == 0) {
       i++;  // X-ITERATOR FROM LEFT TO RIGHT
       if (i >= LOGO_COL_LAST + stripe_length + overflow) {
         clear_vram_logo();  // CLEAN CANVAS
+        pseudo_random = global_counter % 60;
+        if (pseudo_random < 20) {
+          _delay_ms(10);
+        } else if (pseudo_random >= 20 && pseudo_random < 40) {
+          _delay_ms(500);
+        } else {
+          _delay_ms(2000);
+        }
         j = 1;
       }
     } else {
       i--;  // X-ITERATOR FROM RIGHT TO LEFT
       if (i <= LOGO_COL_FIRST - stripe_length - overflow) {
         clear_vram_logo();  // CLEAN CANVAS
+        pseudo_random = global_counter % 60;
+        if (pseudo_random < 20) {
+          _delay_ms(10);
+        } else if (pseudo_random >= 20 && pseudo_random < 40) {
+          _delay_ms(500);
+        } else {
+          _delay_ms(2000);
+        }
         i = 0;
         j = 0;
       }

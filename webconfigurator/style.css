@@ -8,6 +8,7 @@ body {
 h1 {
   text-shadow: 2px 2px 10px #00000076;
   margin-top: 0px;
+  display: inline-block;
 }
 
 .head {
@@ -56,6 +57,9 @@ h1 {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.2em;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  display: block;
 }
 
 .download {

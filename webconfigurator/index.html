@@ -11,8 +11,8 @@
   <body>
     <div class="head">
       <h1>
-        <span id="spinner" class="spinnerhide"></span>Name Tag
-        Configurator&nbsp;<span id="status" class="statusred"></span
+        <span id="spinner" class="spinnerhide"></span>Name Tag Configurator
+        <span id="status" class="statusred"></span
         ><button id="connect" class="preparing">
           Connect device & select USB port ...</button
         ><button
@@ -34,60 +34,65 @@
       </div>
     </div>
     <div class="attention"></div>
-    <div class="content" style="margin-bottom: 20px">
-      <strong>Configuration:</strong>
-      <span
-        id="setselector"
-        class="setselector"
-        onclick="editConfigName()"
-        title="Current name for this configuration. You can edit and change the name."
-      ></span
-      ><span class="editset">&nbsp;(Click to edit)</span>&nbsp;<a
-        id="upload"
-        class="upload"
-        onclick="prepareUpload()"
-        title="Click to import a configuration from a stored file."
-        >Import</a
-      >&nbsp;&nbsp;<a
-        id="download"
-        download="configuration.json"
-        class="downloadhidden"
-        title="Click to download current configuration as file."
-        >Download</a
-      >&nbsp;&nbsp;<a
-        id="share"
-        class="sharehidden"
-        onclick="showEmbedShare()"
-        value=""
-        title="Click to get embed code to share this configuration."
-        >Share EMBED</a
-      >
+    <div id="noscript" style="display: none">
+      <div class="content" style="margin-bottom: 20px">
+        <strong>Configuration:</strong>
+        <span
+          id="setselector"
+          class="setselector"
+          onclick="editConfigName()"
+          title="Current name for this configuration. You can edit and change the name."
+        ></span
+        ><span class="editset">&nbsp;(Click to edit)</span>&nbsp;<a
+          id="upload"
+          class="upload"
+          onclick="prepareUpload()"
+          title="Click to import a configuration from a stored file."
+          >Import</a
+        >&nbsp;&nbsp;<a
+          id="download"
+          download="configuration.json"
+          class="downloadhidden"
+          title="Click to download current configuration as file."
+          >Download</a
+        >&nbsp;&nbsp;<a
+          id="share"
+          class="sharehidden"
+          onclick="showEmbedShare()"
+          value=""
+          title="Click to get embed code to share this configuration."
+          >Share EMBED</a
+        >
+      </div>
+      <div class="content" style="margin-bottom: 20px">
+        <button
+          onclick="askWriteAllSlots()"
+          class="writeallslots"
+          title="Click to send all configured slots to the device in one go."
+        >
+          Send all slots...
+        </button>
+        <span id="help" class="help"
+          >Please connect your badge via USB cable to the computer. Then click
+          the "Connect via USB"-button to start interaction with the badge. It
+          should automatically load the configured Slots.</span
+        >
+      </div>
     </div>
-    <div class="content" style="margin-bottom: 20px">
-      <button
-        onclick="askWriteAllSlots()"
-        class="writeallslots"
-        title="Click to send all configured slots to the device in one go."
-      >
-        Send all slots...
-      </button>
-      <span id="help" class="help"
-        >Please connect your badge via USB cable to the computer. Then click the
-        "Connect via USB"-button to start interaction with the badge. It should
-        automatically load the configured Slots.</span
-      >
-    </div>
+    <script>
+      document.getElementById("noscript").style.display = "block";
+    </script>
     <div class="content">
       <div id="slots">
         <noscript class="noscript"
-          >Please activate Javascript to use this configurator.</noscript
+          >Please activate <u>Javascript</u> to use this configurator.</noscript
         >
       </div>
     </div>
     <br clear="all" />
     <div class="attention"></div>
     <div class="version">
-      Name Tag Configurator — <span id="version"></span> — Use at
+      Name Tag Configurator — <span id="version">Version ?</span> — Use at
       <a href="https://hackerspacebremen.github.io/hshb-nametag/">HSHB</a>
       online —
       <span

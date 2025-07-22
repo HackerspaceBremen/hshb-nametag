@@ -261,19 +261,19 @@ void animation_wave(uint8_t speed) {
         logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
                        pgm_read_byte(&b1Array[i]) + 10);
         i++;
-        if (i >= 35) i = 0;
+        if (i > 35) i = 0;
       }
       j++;
-      if (j >= 35) j = 0;
+      if (j > 35) j = 0;
     } else {  // FAST WAVE
-      for (uint8_t k = LOGO_ROW_LAST; k > LOGO_ROW_FIRST; k--) {
+      for (int8_t k = LOGO_ROW_LAST; k >= LOGO_ROW_FIRST; k--) {
         logo_draw_line(LOGO_COL_FIRST, k, LOGO_COL_LAST, k,
                        pgm_read_byte(&b2Array[i]));
         i++;
-        if (i >= 17) i = 0;
+        if (i > 17) i = 0;
       }
       j++;
-      if (j >= 17) j = 0;
+      if (j > 17) j = 0;
     }
   }
 }

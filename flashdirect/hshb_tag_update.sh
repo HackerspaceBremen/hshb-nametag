@@ -166,7 +166,7 @@ script_continue() {
 trap "script_error" ERR
 trap "script_ctrlc" INT
 
-# LOGO see https://textkool.com/en/ascii-art-generator?hl=controlled%20smushing&vl=default&font=Big&text=FieldServices
+# LOGO see https://textkool.com/en/ascii-art-generator?hl=controlled%20smushing&vl=default&font=Big&text=tagflashr
 
 log "  _               __ _           _          "
 log " | |             / _| |         | |         "

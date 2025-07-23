@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/bin/bash -e
 # SCRIPT TO UPDATE AND BACKUP FIRMWARE
 #
 # LAST UPDATED: JUL 2025
-#      RELEASE: 1.0
-#        BUILD: 1
+#      RELEASE: 1.1
+#        BUILD: 5
 
-SCRIPT_VERSION="1.0"
-SCRIPT_BUILD="1"
+SCRIPT_VERSION="1.1"
+SCRIPT_BUILD="5"
 SCRIPT_EXECUTABLE="${0}"
 
 # BASIC CHECK FOR REALLY RUNNING IN BASH
@@ -210,6 +210,27 @@ log
 log hint "${SCRIPT_PRESS_ANY_KEY}"
 read -r -n 1
 
+# CHECK IF AVRDUDE IS INSTALLED
+log info "INSTALLER: CHECKING INSTALLED avrdude VERSION"
+SCRIPT_FALSE="FALSE"
+SCRIPT_AVRDUDE_BINARY="avrdude"
+SCRIPT_HAS_AVRDUDE=$(command -v $SCRIPT_AVRDUDE_BINARY 2>/dev/null || echo $SCRIPT_FALSE)
+if [[ $SCRIPT_HAS_AVRDUDE == "${SCRIPT_FALSE}" ]]; then
+	log
+	log red "AVRDUDE BINARY '${SCRIPT_AVRDUDE_BINARY}' NECESSARY FOR INSTALLATION."
+	log white "FOUND BINARIES:"
+	log white "$(which $SCRIPT_AVRDUDE_BINARY)"
+	log warn "ERROR"
+	exit 1
+else
+	log green "AVRDUDE BINARY '${SCRIPT_AVRDUDE_BINARY}' IS ALREADY PRESENT."
+	log white "$(which $SCRIPT_AVRDUDE_BINARY)"
+	log white "$($SCRIPT_AVRDUDE_BINARY --version)"
+	log ok "OK"
+fi
+log hint "${SCRIPT_PRESS_ANY_KEY}"
+read -r -n 1
+
 # ASK FOR USB-PORT/DEVICE
 if [[ $# -gt 0 ]]; then
 	SCRIPT_SERIAL_DEVICE=$1
@@ -224,10 +245,20 @@ else
 		log green "USING ENTERED DEVICE: ${SCRIPT_SERIAL_DEVICE_NEW}"
 	fi
 fi
+if [[ -e "${SCRIPT_SERIAL_DEVICE}" ]]; then
+	log
+	log ok "OK"
+	log
+	log hint "${SCRIPT_PRESS_ANY_KEY}"
+	read -r -n 1
+else
+	log warn "DEVICE NOT FOUND. FAILED."
+	script_abort
+fi
 
 # ASK BACK FOR BACKUP
 SCRIPT_DO_BACKUP=0
-log attn-b " WANT TO PULL A BACKUP FROM DEVICE NOW? "
+log attn " WANT TO PULL A BACKUP FROM DEVICE NOW? "
 while true; do
 	SCRIPT_ASK=$(log yellow " Y)es / N)o : ")
 	read -r -p "${SCRIPT_ASK}" INPUT
@@ -261,19 +292,32 @@ if [[ $SCRIPT_DO_BACKUP -gt 0 ]]; then
 		SCRIPT_FILENAME_BACKUP=$SCRIPT_FILENAME_BACKUP_NEW
 		log green "USING ENTERED BACKUP FILE: ${SCRIPT_FILENAME_BACKUP_NEW}"
 	fi
-
+	if [[ -f "${SCRIPT_FILENAME_BACKUP}" ]]; then
+		log
+		log warn "FILE ALREADY EXISTING."
+		script_abort
+	else
+		log hint "${SCRIPT_PRESS_ANY_KEY}"
+		read -r -n 1
+	fi
 	log
-	log cyan "BACKUP IN PROGRESS..."
+	log cyan-b "BACKUP IN PROGRESS... (DO NOT DISCONNECT DEVICE!!!)"
 	log
 	avrdude -p atmega32 -C avrdude.conf -c arduino -b 38400 -D -P "${SCRIPT_SERIAL_DEVICE}" -U "flash:r:${SCRIPT_FILENAME_BACKUP}:i" 2>&1 | grep -E "Reading|Writing"
-	log
-	log ok "OK"
-	log
+	if [[ -f "${SCRIPT_FILENAME_BACKUP}" ]]; then
+		log
+		log ok "OK"
+		log
+	else
+		log
+		log warn "FAILED"
+		log
+	fi
 fi
 
 # ASK BACK FOR UPDATE
 SCRIPT_DO_UPDATE=0
-log attn-b " WANT TO PUSH AN UPDATE TO DEVICE NOW? "
+log attn " WANT TO PUSH AN UPDATE TO DEVICE NOW? "
 while true; do
 	SCRIPT_ASK=$(log yellow " Y)es / N)o : ")
 	read -r -p "${SCRIPT_ASK}" INPUT
@@ -307,8 +351,20 @@ if [[ $SCRIPT_DO_UPDATE -gt 0 ]]; then
 		SCRIPT_FILENAME_UPDATE=$SCRIPT_FILENAME_UPDATE_NEW
 		log green "USING ENTERED UPDATE FILE: ${SCRIPT_FILENAME_UPDATE_NEW}"
 	fi
+
+	if [[ -f "${SCRIPT_FILENAME_UPDATE}" ]]; then
+		log
+		log ok "OK"
+		log
+	else
+		log
+		log warn "FILE NOT FOUND."
+		script_abort
+	fi
+	log hint "${SCRIPT_PRESS_ANY_KEY}"
+	read -r -n 1
 	log
-	log cyan "UPDATE IN PROGRESS..."
+	log cyan-b "UPDATE IN PROGRESS... (DO NOT DISCONNECT DEVICE!!!)"
 	log
 	avrdude -p atmega32 -C avrdude.conf -c arduino -b 38400 -D -P "${SCRIPT_SERIAL_DEVICE}" -U "flash:w:${SCRIPT_FILENAME_UPDATE}:i" 2>&1 | grep -E "Reading|Writing"
 	log

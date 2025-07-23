@@ -895,6 +895,42 @@ function receiveUART(msg) {
       deviceInfo["build"] +
       ")";
   }
+  if (msg.includes("Board ID:")) {
+    if (msg.includes("\n")) {
+      try {
+        let lines = msg.split("\n");
+        let boardstr = lines[0].split(": ");
+        let board_id = boardstr[1];
+        let releasestr = lines[1].split(": ");
+        let versionstr = releasestr[1];
+        let versionparts = versionstr.split("-");
+        let version = versionparts[0];
+        let build = versionparts[2];
+        deviceInfo = { board_id: board_id, firmware: version, build: build };
+        document.getElementById("hardwareinfo").innerHTML =
+          "Board #" +
+          deviceInfo["board_id"] +
+          " &middot; " +
+          deviceInfo["firmware"] +
+          " (" +
+          deviceInfo["build"] +
+          ")";
+        windowShowWithTitleTypeFooterAndInnerHtml(
+          "INFO",
+          "success",
+          "Your device needs a firmware upgrade.",
+          "The firmware installed is very old. Please try to get a new firmware build to gain new features like e.g. new animations.",
+        );
+      } catch (error) {
+        windowShowWithTitleTypeFooterAndInnerHtml(
+          "ERROR",
+          "error",
+          "Could not determine firmware version",
+          "The firmware installed is very old. Please try to get a new firmware build to gain new features like e.g. new animations.",
+        );
+      }
+    }
+  }
 
   console.log("UART RECEIVED: " + msg);
 

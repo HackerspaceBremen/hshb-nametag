@@ -268,5 +268,9 @@ $RECYCLE.BIN/
 
 node_modules
 
+# Firmware images and log files
 flashdirect/*.hex
 flashdirect/*.log
+
+# Private folder
+private/

@@ -60,3 +60,9 @@ $ ls -lFt /sys/class/tty/ttyUSB*
 lrwxrwxrwx 1 root root 0 2012-03-28 20:43 /sys/class/tty/ttyUSB0 -> ../../devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.4/2-1.4:1.0/ttyUSB0/tty/ttyUSB0/
 lrwxrwxrwx 1 root root 0 2012-03-28 20:44 /sys/class/tty/ttyUSB1 -> ../../devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/ttyUSB1/tty/ttyUSB1/
 ```
+
+## SCREENSHOT
+
+This is what the script will show in a full run.
+
+![Terminal Screenshot](../images/screenshot_tagflashr.png)
